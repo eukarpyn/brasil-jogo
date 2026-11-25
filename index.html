@@ -1,0 +1,1494 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Jogo pra aprender os 27 estados do Brasil: bandeiras, capitais, mapa, gentílicos e regiões.">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>BraSil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Space+Mono:wght@400;700&display=swap">
+<style>
+/* Same DNA as Bandeirada (drifting blobs, waving sticker flag, morphing pills), recoloured green/yellow/blue. */
+:root{
+  --bg:#FFF4D1; --ink:#0E1B2C; --ink-soft:#4C5466;
+  --green:#00A859; --yellow:#FFD23F; --blue:#2E4BFF; --pink:#FF3D8B; --orange:#FF7B1C;
+  --card:#FFFFFF; --pill:#FFFFFFD9; --pill-hover:#FFFFFF; --line:#0E1B2C;
+  --ok:#8BE04A; --ok-ink:#0E1B2C; --bad:#FF3D8B; --bad-ink:#FFFFFF;
+  --map-base:#FFFFFF; --map-stroke:#0E1B2C;
+  --r-n:#00A859; --r-ne:#FF7B1C; --r-co:#E8B400; --r-se:#2E4BFF; --r-s:#FF3D8B;
+  --f-display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --f-body:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;
+  --f-mono:"Space Mono",ui-monospace,Menlo,monospace;
+  --blob-a:.5;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0B1620; --ink:#F1F5EC; --ink-soft:#A9B4C2;
+  --green:#1FD07A; --yellow:#FFD84D; --blue:#5C74FF; --pink:#FF5EA0; --orange:#FF8A35;
+  --card:#152433; --pill:#152433D9; --pill-hover:#1E3145; --line:#F1F5EC;
+  --ok:#9BEF5A; --ok-ink:#0B1620; --bad:#FF5EA0; --bad-ink:#0B1620;
+  --map-base:#1E3145; --map-stroke:#F1F5EC;
+  --r-n:#1FD07A; --r-ne:#FF8A35; --r-co:#FFD84D; --r-se:#6F84FF; --r-s:#FF5EA0;
+  --blob-a:.34; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0B1620; --ink:#F1F5EC; --ink-soft:#A9B4C2;
+  --green:#1FD07A; --yellow:#FFD84D; --blue:#5C74FF; --pink:#FF5EA0; --orange:#FF8A35;
+  --card:#152433; --pill:#152433D9; --pill-hover:#1E3145; --line:#F1F5EC;
+  --ok:#9BEF5A; --ok-ink:#0B1620; --bad:#FF5EA0; --bad-ink:#0B1620;
+  --map-base:#1E3145; --map-stroke:#F1F5EC;
+  --r-n:#1FD07A; --r-ne:#FF8A35; --r-co:#FFD84D; --r-se:#6F84FF; --r-s:#FF5EA0;
+  --blob-a:.34; color-scheme:dark }
+
+html,body{height:100%}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;overflow:hidden;-webkit-font-smoothing:antialiased}
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;filter:blur(40px) saturate(1.2)}
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.2;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .grain{mix-blend-mode:screen;opacity:.1}}
+:root[data-theme="dark"] .grain{mix-blend-mode:screen;opacity:.1}
+
+.app{position:relative;z-index:2;height:100%;box-sizing:border-box;display:flex;flex-direction:column;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 0}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.logo{font-family:var(--f-display);font-weight:900;font-size:clamp(18px,3.4vw,26px);letter-spacing:-.03em;display:flex;align-items:center;gap:8px;cursor:pointer;background:none;border:0;color:var(--ink);padding:0}
+.logo i{display:inline-block;width:22px;height:22px;background:var(--green);border-radius:62% 38% 46% 54%/60% 44% 56% 40%;animation:morph 6s ease-in-out infinite;box-shadow:inset 0 0 0 5px var(--yellow)}
+.hud{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:6px 11px;border:1.5px solid var(--line);border-radius:999px;background:var(--pill);display:flex;gap:6px;align-items:center;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
+.chip b{font-weight:700}
+.iconbtn{cursor:pointer}
+.iconbtn:hover{background:var(--pill-hover)}
+.mult{background:var(--yellow);color:#0E1B2C;border-color:#0E1B2C;transform:rotate(-4deg)}
+.mult[data-m="1"]{background:var(--pill);color:var(--ink);border-color:var(--line);transform:none}
+
+main{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;align-items:center;justify-content:safe center;padding-block:10px}
+.screen{width:100%;max-width:980px;display:flex;flex-direction:column;align-items:center;gap:clamp(12px,2.2vh,22px)}
+
+/* ---------- start ---------- */
+.start-grid{align-self:stretch;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:clamp(18px,3vw,40px);align-items:center}
+.start-main{display:flex;flex-direction:column;gap:clamp(12px,2.2vh,20px);min-width:0}
+.hero{margin:0;font-family:var(--f-display);font-weight:900;line-height:.92;letter-spacing:-.045em;font-size:clamp(36px,min(6.6vw,8.5vh),80px);text-wrap:balance}
+.hero span{display:inline-block}
+.hero .w2{font-weight:400;font-family:var(--f-body);font-style:italic;letter-spacing:-.02em;color:var(--blue)}
+.hero .w3{background:var(--green);color:var(--yellow);padding:0 .14em .06em;border-radius:.5em .2em .5em .2em;transform:rotate(-2.5deg);margin-left:.04em}
+.hero .w4{-webkit-text-stroke:2px var(--ink);color:transparent}
+.lede{margin:0;max-width:54ch;color:var(--ink-soft);font-size:clamp(15px,1.8vw,17px);line-height:1.45}
+.opts{display:flex;flex-direction:column;gap:12px}
+.opt-group{display:flex;flex-direction:column;gap:7px;min-width:0}
+.opt-group > span{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.opt-note{color:var(--ink-soft);font-size:14px;line-height:1.35}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{font:600 14px var(--f-body);padding:8px 13px;border-radius:999px;border:1.5px solid var(--line);background:var(--pill);color:var(--ink);cursor:pointer;transition:transform .25s cubic-bezier(.3,1.6,.5,1),background .2s}
+.seg button:hover{transform:translateY(-2px) rotate(-1deg)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.cta-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.cta{font-family:var(--f-display);font-weight:900;font-size:clamp(20px,3vw,28px);letter-spacing:-.02em;padding:18px 34px;border:0;cursor:pointer;color:#0E1B2C;background:var(--yellow);
+  border-radius:58% 42% 55% 45%/55% 48% 52% 45%;animation:morph 5s ease-in-out infinite;transition:transform .3s cubic-bezier(.3,1.6,.5,1);box-shadow:0 0 0 2px #0E1B2C,6px 7px 0 #0E1B2C}
+.cta:hover{transform:rotate(-3deg) scale(1.05)}
+.cta:active{transform:scale(.96)}
+.btn2{font:700 15px var(--f-body);padding:13px 19px;border-radius:999px;border:2px solid var(--line);background:var(--pill);color:var(--ink);cursor:pointer;transition:transform .25s cubic-bezier(.3,1.6,.5,1)}
+.btn2:hover{background:var(--pill-hover);transform:translateY(-2px)}
+.best{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+
+.yourmap{position:relative;display:flex;flex-direction:column;gap:8px;align-items:center;min-width:0}
+.yourmap-card{position:relative;width:100%;max-width:400px;background:var(--pill);border:2px solid var(--line);border-radius:26px 34px 28px 36px/32px 26px 36px 28px;padding:14px 14px 10px;box-shadow:8px 9px 0 var(--green);transform:rotate(1.2deg);box-sizing:border-box}
+.yourmap-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+.yourmap-pct{font-family:var(--f-display);font-weight:900;font-size:30px;letter-spacing:-.04em;color:var(--ink);text-transform:none}
+.yourmap svg{width:100%;height:auto;display:block}
+.yourmap svg path{cursor:pointer;transition:fill-opacity .3s, transform .25s}
+.yourmap svg path:hover{stroke-width:2.2}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:center;font-size:12px;color:var(--ink-soft)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+
+/* ---------- play ---------- */
+.qline{font-family:var(--f-display);font-weight:700;font-size:clamp(17px,2.6vw,24px);letter-spacing:-.02em;text-align:center;line-height:1.15;text-wrap:balance;max-width:720px}
+.qline em{font-style:normal;background:var(--yellow);color:#0E1B2C;padding:0 .2em;border-radius:.3em}
+.stage{position:relative;width:min(100%,540px,calc((100svh - 450px) * 1.43));min-width:200px;aspect-ratio:10/7;max-width:100%}
+.stage.is-map{aspect-ratio:613/639;width:min(100%,420px,calc((100svh - 450px) * .96))}
+.flagcard{position:absolute;inset:0;border-radius:14px;background:var(--card);box-shadow:0 0 0 2px var(--line),10px 12px 0 var(--blue);transform:rotate(-2deg);overflow:hidden;will-change:transform}
+.flagwrap{position:absolute;inset:0;filter:url(#wave)}
+.flagwrap img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.05)}
+.cloth{position:absolute;inset:0;pointer-events:none;mix-blend-mode:soft-light;opacity:.8;
+  background:repeating-linear-gradient(100deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 9%,rgba(0,0,0,.35) 19%,rgba(255,255,255,0) 26%);background-size:220% 100%;animation:cloth 5.5s linear infinite}
+.namecard{position:absolute;inset:0;display:grid;place-items:center;padding:24px;box-sizing:border-box;text-align:center}
+.namecard .big{font-family:var(--f-display);font-weight:900;letter-spacing:-.04em;line-height:.95;font-size:clamp(28px,6.4vw,60px);text-wrap:balance;color:#0E1B2C}
+.namecard .sub{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-top:10px;color:#0E1B2CB0}
+.namecard img{position:absolute;left:16px;top:16px;width:22%;border-radius:4px;box-shadow:0 0 0 1.5px #0E1B2C;transform:rotate(-6deg)}
+.namecard.capital{background:var(--ink)}
+.namecard.capital .big{color:var(--yellow)}
+.namecard.capital .sub{color:var(--bg);opacity:.75}
+.mapcard{position:absolute;inset:0;border-radius:24px;background:var(--pill);box-shadow:0 0 0 2px var(--line),10px 12px 0 var(--green);transform:rotate(-1.5deg);padding:10px;box-sizing:border-box}
+.mapcard svg{width:100%;height:100%;display:block}
+.target{fill:var(--pink)!important}
+.ring{fill:none;stroke:var(--pink);stroke-width:3;transform-box:fill-box;transform-origin:center;animation:ring 1.4s ease-out infinite}
+.dot{fill:var(--pink);stroke:var(--ink);stroke-width:1.5}
+.stamp{position:absolute;z-index:3;top:-14px;right:-12px;font-family:var(--f-mono);font-weight:700;font-size:12px;letter-spacing:.08em;padding:8px 12px;background:var(--orange);color:#0E1B2C;border:2px solid #0E1B2C;border-radius:999px;transform:rotate(7deg);font-variant-numeric:tabular-nums}
+.tag{position:absolute;z-index:3;bottom:-12px;left:-10px;font-family:var(--f-mono);font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:6px 11px;border:2px solid #0E1B2C;border-radius:999px;transform:rotate(-5deg);color:#0E1B2C;background:var(--yellow)}
+.tag.retry{background:var(--pink);color:#fff}
+.floater{position:absolute;z-index:4;left:50%;top:40%;font-family:var(--f-display);font-weight:900;font-size:clamp(28px,5vw,46px);color:var(--ink);pointer-events:none;white-space:nowrap}
+.answers{width:min(100%,720px);display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.answers.five{grid-template-columns:repeat(6,1fr)}
+.answers.five .ans{grid-column:span 2}
+.answers.five .ans:nth-child(4){grid-column:2/span 2}
+.namecard.reg{background:var(--yellow)}
+.ans{position:relative;font:700 clamp(15px,2.1vw,19px)/1.15 var(--f-body);text-align:left;padding:15px 16px 15px 50px;min-height:62px;border:2px solid var(--line);background:var(--pill);color:var(--ink);cursor:pointer;
+  border-radius:28px 34px 30px 26px/30px 26px 34px 28px;transition:transform .35s cubic-bezier(.3,1.6,.5,1),background .2s,border-radius .6s ease;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);min-width:0;overflow-wrap:anywhere}
+.ans:hover:not(:disabled){transform:translateY(-3px) rotate(-.8deg);background:var(--pill-hover);border-radius:40px 18px 36px 22px/24px 38px 20px 34px}
+.ans:nth-child(even):hover:not(:disabled){transform:translateY(-3px) rotate(.8deg)}
+.ans:focus-visible,.seg button:focus-visible,.cta:focus-visible,.iconbtn:focus-visible,.logo:focus-visible,.btn2:focus-visible,.card:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.ans kbd{position:absolute;left:12px;top:50%;translate:0 -50%;font:700 12px var(--f-mono);width:26px;height:26px;display:grid;place-items:center;border-radius:50%;border:1.5px solid currentColor;opacity:.7}
+.ans:disabled{cursor:default}
+.ans.ok{background:var(--ok);color:var(--ok-ink);border-color:var(--ok-ink);transform:scale(1.03) rotate(-1deg)}
+.ans.bad{background:var(--bad);color:var(--bad-ink);border-color:var(--line)}
+.ans.dim{opacity:.38}
+.hint{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);text-align:center}
+.reveal{width:min(100%,720px);min-height:64px;display:flex;align-items:center;gap:12px;box-sizing:border-box}
+.reveal.on{background:var(--pill);border:2px solid var(--line);border-radius:18px;padding:8px 12px;cursor:pointer}
+.reveal .mini{width:52px;flex:none}
+.reveal .mini svg{width:100%;height:auto;display:block}
+.reveal .rflag{width:58px;flex:none;border-radius:4px;box-shadow:0 0 0 1.5px var(--line)}
+.reveal .rtxt{flex:1;min-width:0;font-size:14px;line-height:1.3}
+.reveal .rtxt b{font-family:var(--f-display);font-size:15px;letter-spacing:-.02em}
+.reveal .rtxt small{display:block;color:var(--ink-soft);font-size:13px}
+.reveal .skip{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);flex:none}
+.particle{position:fixed;z-index:20;pointer-events:none;border-radius:50% 40% 55% 45%/45% 55% 40% 50%}
+
+/* click map / timer / campaign */
+.stage.is-click{aspect-ratio:613/639;width:min(100%,560px,calc((100svh - 250px) * .96))}
+.clickmap path{cursor:pointer;transition:fill .15s}
+.clickmap path:hover{fill:var(--yellow)}
+.clickmap .hit{fill:transparent;stroke:var(--ink);stroke-width:1;stroke-dasharray:2 3;cursor:pointer}
+.clickmap .hit:hover{fill:var(--yellow);fill-opacity:.6}
+.hit-ok{fill:var(--ok)!important}
+.hit-bad{fill:var(--bad)!important}
+.namecard.gent{background:var(--orange)}
+.chip.time{background:var(--yellow);color:#0E1B2C;border-color:#0E1B2C}
+.chip.time[data-low="1"]{background:var(--pink);color:#fff;animation:beat .6s ease-in-out infinite}
+@keyframes beat{50%{transform:scale(1.08)}}
+.more{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.more > span{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);width:100%}
+.btn2.hot{background:var(--blue);color:#fff;border-color:var(--line)}
+.btn2 small{font:400 12px var(--f-mono);letter-spacing:.04em;opacity:.85;margin-left:6px}
+.camp-list{display:flex;flex-direction:column;gap:10px;min-width:0}
+.stg{all:unset;box-sizing:border-box;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:12px 16px;border:2px solid var(--line);border-radius:22px 28px 24px 30px/26px 22px 30px 24px;background:var(--pill);cursor:pointer;transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
+.stg:hover:not([aria-disabled="true"]){transform:translateX(4px) rotate(-.5deg)}
+.stg:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.stg[aria-disabled="true"]{opacity:.5;cursor:not-allowed}
+.stg .num{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);font-weight:900;font-size:16px;color:#0E1B2C;border:2px solid #0E1B2C}
+.stg b{display:block;font-family:var(--f-display);font-size:18px;letter-spacing:-.02em}
+.stg small{color:var(--ink-soft);font-size:13px}
+.stg .st{font-size:20px;letter-spacing:2px;color:var(--orange);white-space:nowrap}
+.camp-grid{align-self:stretch;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:clamp(18px,3vw,40px);align-items:start}
+
+/* drag to region */
+.dhead{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.dhint{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);text-align:center}
+.deck{position:relative;width:min(210px,52vw);touch-action:none}
+.deck::before,.deck::after{content:"";position:absolute;inset:0;border:2px solid var(--line);border-radius:16px;background:var(--card)}
+.deck::before{transform:rotate(5deg)}
+.deck::after{transform:rotate(-4deg)}
+.deck.last::before,.deck.last::after{display:none}
+.deck.empty{visibility:hidden}
+.dcard{position:relative;z-index:2;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:8px;box-shadow:8px 9px 0 var(--blue);display:flex;flex-direction:column;gap:6px;box-sizing:border-box}
+.dcard img{width:100%;aspect-ratio:10/7;object-fit:cover;border-radius:8px;box-shadow:0 0 0 1.5px var(--line);pointer-events:none}
+.dcard b{font-family:var(--f-display);font-size:17px;letter-spacing:-.02em;text-align:center;line-height:1.1}
+.dcard.dragging{cursor:grabbing;box-shadow:14px 16px 0 var(--blue);z-index:30}
+.zones{width:min(100%,860px);display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.zone{grid-column:span 2;all:unset;grid-column:span 2;box-sizing:border-box;cursor:pointer;min-height:92px;padding:10px 12px;border:2px dashed var(--line);border-radius:22px 28px 24px 30px/26px 22px 30px 24px;background:var(--pill);display:flex;flex-direction:column;gap:6px;transition:transform .25s cubic-bezier(.3,1.6,.5,1),background .2s}
+.zone:nth-child(4){grid-column:2/span 2}
+.zone{min-width:0}
+.zone:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.zone h4{margin:0;display:flex;align-items:center;gap:8px;font-family:var(--f-display);font-size:15px;letter-spacing:-.01em}
+.zone h4 i{width:14px;height:14px;border-radius:50%;flex:none;border:1.5px solid #0E1B2C}
+.zone h4 small{margin-left:auto;font:400 11px var(--f-mono);color:var(--ink-soft)}
+.zone kbd{font:700 10px var(--f-mono);border:1.2px solid currentColor;border-radius:50%;width:18px;height:18px;display:grid;place-items:center;opacity:.6}
+.zone .got{display:flex;flex-wrap:wrap;gap:4px}
+.zone .got span{font:700 11px var(--f-mono);padding:2px 6px;border-radius:99px;color:#0E1B2C;border:1.2px solid #0E1B2C}
+.zone.over{border-style:solid;transform:scale(1.04);background:var(--pill-hover)}
+.zone.bad{background:var(--bad);color:var(--bad-ink)}
+.zone.okflash{background:var(--ok);color:var(--ok-ink)}
+.zone.help{border-style:solid;border-color:var(--green);animation:beat .7s ease-in-out infinite}
+
+/* fill the region (free recall) */
+.fill-pick{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.fill-pick p{margin:0;color:var(--ink-soft);max-width:52ch;line-height:1.45}
+.fill-pick .count{font-family:var(--f-mono);font-size:13px;letter-spacing:.06em;color:var(--ink)}
+.fill-pick .seg{justify-content:center}
+.fill-grid{align-self:stretch;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(16px,3vw,36px);align-items:start}
+.fill-map{background:var(--pill);border:2px solid var(--line);border-radius:24px;padding:10px;box-shadow:8px 9px 0 var(--green);max-width:420px;width:100%;justify-self:center;box-sizing:border-box}
+.fill-map svg{width:100%;height:auto;display:block}
+.fill-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.slot{display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 10px;border:2px dashed var(--line);border-radius:14px;font-weight:700;font-size:15px;box-sizing:border-box;min-width:0}
+.slot i{font:700 11px var(--f-mono);font-style:normal;color:var(--ink-soft);width:16px;flex:none}
+.slot img{width:30px;border-radius:3px;box-shadow:0 0 0 1px var(--line);flex:none}
+.slot.got{border-style:solid;background:var(--pill)}
+.slot.lost{border-style:solid;background:var(--bad);color:var(--bad-ink)}
+.slot.lost i{color:inherit}
+.slot.hinted span{color:var(--ink-soft);letter-spacing:.1em}
+.fill-form{display:flex;gap:8px}
+.fill-form input{flex:1;min-width:0;font:600 18px var(--f-body);padding:12px 16px;border-radius:999px;border:2px solid var(--line);background:var(--card);color:var(--ink);outline:none}
+.fill-form input:focus{box-shadow:0 0 0 3px var(--blue)}
+.fill-msg{min-height:1.3em;font-weight:600;font-size:15px}
+.fill-msg.bad{color:var(--pink)}
+.fill-msg.ok{color:var(--green)}
+.fill-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.fill-actions .btn2{padding:10px 15px;font-size:14px}
+.sigkeys{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px}
+.sigkeys button{font:700 13px var(--f-mono);padding:9px 0;border-radius:12px;border:1.5px solid var(--line);background:var(--pill);color:var(--ink);cursor:pointer}
+.sigkeys button:disabled{opacity:.25;cursor:default}
+.pulse-st{animation:beat .7s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+
+/* home tiles + sub screens */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;justify-content:center;gap:5px;padding:16px 18px;min-height:96px;min-width:0;border:2px solid var(--line);border-radius:24px 30px 26px 32px/28px 24px 32px 26px;background:var(--pill);color:var(--ink);box-shadow:6px 7px 0 var(--sh,var(--line));transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
+.tile:hover{transform:translateY(-3px) rotate(-.6deg)}
+.tile:nth-child(odd):hover{transform:translateY(-3px) rotate(.6deg)}
+.tile:focus-visible{outline:3px solid var(--blue);outline-offset:4px}
+.tile b{font-family:var(--f-display);font-weight:900;font-size:clamp(19px,2.4vw,24px);letter-spacing:-.03em;line-height:1}
+.tile small{color:var(--ink-soft);font-size:14px;line-height:1.3}
+.tile.big{grid-column:1/-1;min-height:118px;background:var(--yellow);color:#0E1B2C;border-color:#0E1B2C;box-shadow:7px 8px 0 #0E1B2C;animation:morphsoft 7s ease-in-out infinite}
+.tile.big b{font-size:clamp(32px,5vw,48px)}
+.tile.big small{color:#0E1B2CB8;font-size:15px}
+@keyframes morphsoft{0%,100%{border-radius:24px 34px 26px 38px/30px 24px 36px 26px}50%{border-radius:36px 24px 38px 26px/24px 34px 26px 36px}}
+.mapbtn{align-self:center}
+.sub-head{align-self:stretch;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.sub-head h2{margin:0;font-family:var(--f-display);font-weight:900;font-size:clamp(26px,5vw,44px);letter-spacing:-.04em;line-height:.95}
+.sub-head p{margin:4px 0 0;color:var(--ink-soft);font-size:15px}
+.back{padding:9px 14px;font-size:14px}
+.modes{align-self:stretch;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.mtile{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:8px;padding:10px 10px 12px;min-width:0;border:2px solid var(--line);border-radius:22px;background:var(--pill);color:var(--ink);transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
+.mtile:hover{transform:translateY(-3px) rotate(-.8deg)}
+.mtile:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.mtile[aria-pressed="true"]{background:var(--ink);color:var(--bg);box-shadow:6px 7px 0 var(--green)}
+.mtile[aria-pressed="true"] small{color:inherit;opacity:.75}
+.mtile .pv{height:78px;border-radius:14px;background:var(--card);border:1.5px solid var(--line);display:grid;place-items:center;overflow:hidden;position:relative;color:#0E1B2C}
+.mtile .pv img{height:58px;border-radius:4px;box-shadow:0 0 0 1px #0E1B2C}
+.mtile .pv svg{height:70px;width:auto}
+.mtile .pv .word{font-family:var(--f-display);font-weight:900;font-size:19px;letter-spacing:-.03em;padding:4px 10px;border-radius:10px}
+.mtile .pv .stack{display:flex}
+.mtile .pv .stack img{height:40px;margin-left:-14px;transform:rotate(-8deg)}
+.mtile .pv .stack img:nth-child(2){transform:rotate(4deg) translateY(-4px)}
+.mtile .pv .stack img:nth-child(3){transform:rotate(10deg)}
+.mtile b{font-family:var(--f-display);font-size:17px;letter-spacing:-.02em;padding-inline:4px}
+.mtile small{color:var(--ink-soft);font-size:13px;line-height:1.3;padding-inline:4px}
+.mtile .badge{position:absolute;top:6px;right:6px;font:700 10px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:99px;background:var(--green);color:#fff;border:1.2px solid #0E1B2C}
+.adv{align-self:stretch;border:2px solid var(--line);border-radius:20px;background:var(--pill);padding:0 14px}
+.adv summary{cursor:pointer;list-style:none;display:flex;justify-content:flex-start;align-items:baseline;gap:10px;flex-wrap:wrap;padding:12px 0;font-weight:700}
+.adv summary::-webkit-details-marker{display:none}
+.adv summary::before{content:"+";font-family:var(--f-mono);margin-right:2px}
+.adv[open] summary::before{content:"−"}
+.adv summary span{font:400 12px var(--f-mono);letter-spacing:.04em;color:var(--ink-soft);margin-left:auto}
+.adv .opts{padding-bottom:14px}
+.setup-go{align-self:stretch;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.hub{align-self:stretch;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:clamp(18px,3vw,40px);align-items:center}
+.hub .tiles{grid-template-columns:1fr}
+
+/* ---------- end ---------- */
+.result-top{align-self:stretch;display:grid;grid-template-columns:auto 1fr;gap:clamp(16px,4vw,40px);align-items:end}
+.bigscore{font-family:var(--f-display);font-weight:900;font-size:clamp(64px,15vw,160px);line-height:.82;letter-spacing:-.06em;font-variant-numeric:tabular-nums}
+.bigscore small{display:block;font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;font-weight:400;margin-bottom:10px;color:var(--ink-soft);text-transform:uppercase}
+.verdict{font-family:var(--f-display);font-weight:700;font-size:clamp(18px,2.8vw,28px);line-height:1.1;letter-spacing:-.02em;text-wrap:balance}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.sec-title{align-self:stretch;font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.misses{align-self:stretch;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;max-height:34vh;overflow:auto;padding:4px 4px 10px}
+.miss{display:flex;flex-direction:column;gap:5px;font-weight:600;font-size:14px;line-height:1.2}
+.miss img{width:100%;aspect-ratio:10/7;object-fit:cover;border-radius:8px;box-shadow:0 0 0 1.5px var(--line)}
+.miss em{font-style:normal;font-family:var(--f-mono);font-size:11px;color:var(--ink-soft);font-weight:400}
+.end-actions{align-self:stretch;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.perfect{font-weight:600;color:var(--ink-soft);margin:0}
+
+/* ---------- album ---------- */
+.album-head{align-self:stretch;display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap}
+.album-head h2{margin:0;font-family:var(--f-display);font-weight:900;font-size:clamp(30px,6vw,56px);letter-spacing:-.045em;line-height:.9}
+.album-head p{margin:6px 0 0;color:var(--ink-soft);font-size:15px;max-width:52ch}
+.region{align-self:stretch;display:flex;flex-direction:column;gap:10px}
+.region h3{margin:8px 0 0;font-family:var(--f-display);font-size:16px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.region h3 i{width:14px;height:14px;border-radius:50%;display:inline-block}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.card{all:unset;box-sizing:border-box;cursor:pointer;background:var(--pill);border:2px solid var(--line);border-radius:16px;padding:8px;display:flex;flex-direction:column;gap:6px;transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
+.card:hover{transform:translateY(-3px) rotate(-1deg)}
+.card img{width:100%;aspect-ratio:10/7;object-fit:cover;border-radius:6px;box-shadow:0 0 0 1px var(--line)}
+.card b{font-size:15px;line-height:1.15}
+.card small{color:var(--ink-soft);font-size:13px}
+.pips{display:flex;gap:4px;flex-wrap:wrap}
+.pip{font-family:var(--f-mono);font-size:10px;letter-spacing:.04em;padding:2px 6px;border-radius:99px;border:1.2px solid var(--line);opacity:.45}
+.pip[data-l="1"]{opacity:.7}
+.pip[data-l="2"]{opacity:1;background:var(--yellow);color:#0E1B2C;border-color:#0E1B2C}
+.pip[data-l="3"]{opacity:1;background:var(--green);color:#fff;border-color:#0E1B2C}
+
+/* ---------- study sheet ---------- */
+dialog{border:2px solid var(--line);border-radius:26px;background:var(--card);color:var(--ink);padding:0;width:min(560px,calc(100vw - 32px));max-height:calc(100svh - 32px);box-shadow:10px 12px 0 var(--blue)}
+dialog::backdrop{background:#0E1B2C99;backdrop-filter:blur(4px)}
+.sheet{padding:18px;display:grid;grid-template-columns:1fr 150px;gap:16px;align-items:start}
+.sheet .sflag{grid-column:1/-1;width:100%;aspect-ratio:10/7;object-fit:cover;border-radius:12px;box-shadow:0 0 0 2px var(--line)}
+.sheet h2{margin:0;font-family:var(--f-display);font-weight:900;font-size:clamp(24px,5vw,34px);letter-spacing:-.04em;line-height:1}
+.sheet dl{margin:12px 0 0;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:15px}
+.sheet dt{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);padding-top:3px}
+.sheet dd{margin:0;font-weight:600}
+.sheet .tip{grid-column:1/-1;margin:0;padding:10px 12px;border-radius:12px;background:var(--bg);font-size:15px;line-height:1.4}
+.sheet .tip b{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;display:block;color:var(--ink-soft);margin-bottom:2px}
+.sheet .smap svg{width:100%;height:auto}
+.sheet .close{grid-column:1/-1;justify-self:start}
+
+/* ---------- ticker ---------- */
+.ticker{flex:none;margin-left:calc(-1 * max(16px,env(safe-area-inset-left,0px)));margin-right:calc(-1 * max(16px,env(safe-area-inset-right,0px)));
+  border-top:2px solid var(--line);background:var(--ink);color:var(--bg);overflow:hidden;white-space:nowrap;padding-block:8px calc(8px + env(safe-area-inset-bottom,0px))}
+.ticker div{display:inline-flex;gap:28px;animation:tick 46s linear infinite;font-family:var(--f-display);font-weight:700;font-size:13px;letter-spacing:.02em;text-transform:uppercase}
+.ticker span:nth-child(3n+1)::after{content:" ✺";color:var(--yellow)}
+.ticker span:nth-child(3n+2)::after{content:" ●";color:var(--green)}
+.ticker span:nth-child(3n)::after{content:" ◆";color:var(--blue)}
+.credits{flex:none;margin:0;padding:4px 0 6px;text-align:center;font:11px var(--f-mono);color:var(--ink-soft)}
+.credits a{color:inherit}
+.loading{font-family:var(--f-mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+
+@keyframes morph{0%,100%{border-radius:58% 42% 55% 45%/55% 48% 52% 45%}33%{border-radius:40% 60% 38% 62%/62% 40% 60% 38%}66%{border-radius:52% 48% 66% 34%/40% 62% 38% 60%}}
+@keyframes cloth{from{background-position:0% 0}to{background-position:-220% 0}}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes ring{from{transform:scale(.6);opacity:1}to{transform:scale(2.4);opacity:0}}
+@keyframes shake{10%,90%{translate:-2px 0}20%,80%{translate:4px 0}30%,50%,70%{translate:-7px 0}40%,60%{translate:7px 0}}
+.shake{animation:shake .5s cubic-bezier(.36,.07,.19,.97)}
+
+@media (max-width:760px){
+  .start-grid{grid-template-columns:1fr}
+  .yourmap-card{max-width:340px}
+}
+@media (max-width:560px){
+  .modes{grid-template-columns:1fr 1fr;gap:10px}
+  .mtile .pv{height:64px}
+  .adv summary span{width:100%;margin-left:0}
+  .answers{gap:8px}
+  .answers.five{grid-template-columns:1fr 1fr}
+  .answers.five .ans,.answers.five .ans:nth-child(4){grid-column:auto}
+  .answers.five .ans:nth-child(5){grid-column:1/-1}
+  .ans{padding:12px 12px 12px 42px;min-height:54px;font-size:15px}
+  .ans kbd{left:9px;width:22px;height:22px;font-size:11px}
+  .stage{width:min(100%,calc((100svh - 430px) * 1.43))}
+  .stage.is-map{width:min(100%,calc((100svh - 430px) * .96))}
+  .result-top{grid-template-columns:1fr}
+  .hud .chip.hide-sm{display:none}
+  .sheet{grid-template-columns:1fr 110px}
+  .cards{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+  .stage.is-click{width:min(100%,calc((100svh - 240px) * .96))}
+  .camp-grid{grid-template-columns:1fr}
+  .hub{grid-template-columns:1fr}
+  .tile{min-height:84px;padding:14px}
+  .fill-grid{grid-template-columns:1fr}
+  .fill-map{order:2;max-width:300px}
+  .slots{grid-template-columns:1fr 1fr}
+  .slot{font-size:14px;min-height:40px}
+  .zones{grid-template-columns:1fr 1fr;gap:8px}
+  .zone,.zone:nth-child(4){grid-column:auto;min-height:74px;padding:8px 10px}
+  .zone:nth-child(5){grid-column:1/-1}
+  .zone{min-width:0}
+  .zone kbd{display:none}
+  .zone h4{font-size:14px;gap:6px}
+  .deck{width:min(170px,46vw)}
+  .reveal .skip{display:none}
+  .reveal .rflag{width:44px}
+  .reveal .mini{width:44px}
+  .reveal .rtxt{font-size:13px}
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .flagwrap{filter:none}
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="wave" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence id="turb" type="fractalNoise" baseFrequency="0.006 0.018" numOctaves="1" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="12" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<canvas id="bg" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
+
+<div class="app">
+  <header>
+    <button class="logo" id="logo" title="Voltar ao início"><i></i>BraSil</button>
+    <div class="hud">
+      <span class="chip time" id="chipTime" hidden>⏱ <b id="time">60</b></span>
+      <span class="chip" id="chipScore" hidden>Pontos <b id="score">0</b></span>
+      <span class="chip mult" id="chipMult" data-m="1" hidden>×<b id="mult">1</b></span>
+      <span class="chip hide-sm" id="chipStreak" hidden>Sequência <b id="streak">0</b></span>
+      <button class="chip iconbtn" id="sound" aria-pressed="true" title="Ligar ou desligar o som">Som <b id="soundLbl">on</b></button>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="loading" id="loading">Hasteando 27 bandeiras…</div>
+
+    <section class="screen" id="scrStart" hidden>
+      <div class="start-grid">
+        <div class="start-main">
+          <h1 class="hero" aria-label="Decora esse Brasil!"><span>Decora</span> <span class="w2">esse</span> <span class="w3">Brasil</span><span class="w4">!</span></h1>
+          <p class="lede">Os 27 estados, brincando: bandeira, capital, mapa e região. O que você erra volta até grudar.</p>
+          <div class="tiles">
+            <button class="tile big" id="btnGoPlay"><b>Jogar</b><small>Bandeiras, capitais, mapa e gentílicos</small></button>
+            <button class="tile" id="btnDaily" style="--sh:var(--blue)"><b>Desafio do dia</b><small id="dailySub">10 perguntas novas</small></button>
+            <button class="tile" id="btnGoRegions" style="--sh:var(--orange)"><b>Regiões</b><small>Norte, Nordeste, Centro-Oeste, Sudeste e Sul</small></button>
+            <button class="tile" id="btnCamp" style="--sh:var(--pink)"><b>Campanha</b><small id="campSub">Uma região por vez</small></button>
+            <button class="tile" id="btnAlbum" style="--sh:var(--green)"><b>Álbum</b><small>Estude os 27 estados</small></button>
+          </div>
+        </div>
+        <div class="yourmap">
+          <div class="yourmap-card">
+            <div class="yourmap-head"><span>Seu Brasil</span><span class="yourmap-pct" id="pct">0%</span></div>
+            <div id="yourMap"></div>
+          </div>
+          <div class="legend" id="legend"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="scrSetup" hidden>
+      <div class="sub-head"><button class="btn2 back" data-back>← Voltar</button><div><h2>O que vamos treinar?</h2><p>Toque num modo e o jogo começa.</p></div></div>
+      <details class="adv" id="adv"><summary>Mais opções <span id="advSum"></span></summary>
+        <div class="opts">
+          <div class="opt-group"><span>Região</span>
+            <div class="seg" id="segRegion">
+              <button data-v="all" aria-pressed="true">Brasil todo</button><button data-v="n">Norte</button><button data-v="ne">Nordeste</button><button data-v="co">Centro-Oeste</button><button data-v="se">Sudeste</button><button data-v="s">Sul</button>
+            </div>
+          </div>
+          <div class="opt-group"><span>Quantas perguntas</span>
+            <div class="seg" id="segRounds">
+              <button data-v="10">10</button><button data-v="20" aria-pressed="true">20</button><button data-v="all">Uma de cada estado</button><button data-v="60s">Contra o relógio (60s)</button>
+            </div>
+          </div>
+        </div>
+      </details>
+      <div class="modes" id="modeTiles"></div>
+      <span class="best" id="poolInfo">Toque num modo pra começar</span>
+    </section>
+
+    <section class="screen" id="scrRegions" hidden>
+      <div class="sub-head"><button class="btn2 back" data-back>← Voltar</button><div><h2>Regiões do Brasil</h2><p>Norte 7 · Nordeste 9 · Centro-Oeste 4 · Sudeste 4 · Sul 3 = 27</p></div></div>
+      <div class="hub">
+        <div class="tiles">
+          <button class="tile" id="btnDrag" style="--sh:var(--orange)"><b>Arrasta pras regiões</b><small>Arraste cada estado pra caixa da região certa.</small></button>
+          <button class="tile" id="btnFill" style="--sh:var(--green)"><b>Completa a região</b><small>Escreva de cabeça quais são os estados de cada região.</small></button>
+          <button class="tile" id="btnRegQuiz" style="--sh:var(--blue)"><b>Qual é a região?</b><small>Perguntas rápidas: aparece o estado, você diz a região.</small></button>
+        </div>
+        <div class="yourmap"><div class="yourmap-card"><div id="regMap"></div></div><div class="legend" id="regLegend"></div></div>
+      </div>
+    </section>
+
+    <section class="screen" id="scrPlay" hidden>
+      <div class="qline" id="qline"></div>
+      <div class="stage" id="stage">
+        <div id="card"></div>
+        <div class="stamp" id="stamp">01/20</div>
+        <div class="tag" id="tag">Bandeira</div>
+      </div>
+      <div class="answers" id="answers"></div>
+      <div class="reveal" id="reveal"><div class="hint" style="width:100%" id="hint">Teclas 1 a 4 também funcionam</div></div>
+    </section>
+
+    <section class="screen" id="scrEnd" hidden>
+      <div class="result-top">
+        <div class="bigscore"><small id="endLabel">Pontos</small><span id="endScore">0</span></div>
+        <div>
+          <div class="verdict" id="verdict"></div>
+          <div class="stats" id="endStats"></div>
+        </div>
+      </div>
+      <div class="sec-title" id="missTitle">Pra revisar</div>
+      <div class="misses" id="misses"></div>
+      <div class="end-actions">
+        <button class="cta" id="btnAgain">Jogar de novo</button>
+        <button class="cta" id="btnNext" hidden>Próxima fase</button>
+        <button class="btn2" id="btnRetry">Treinar só os erros</button>
+        <button class="btn2" id="btnMenu">Mudar modo</button>
+      </div>
+    </section>
+
+    <section class="screen" id="scrDrag" hidden>
+      <div class="qline">Arrasta cada estado pra região dele</div>
+      <div class="dhead"><span class="chip">Faltam <b id="dLeft">27</b></span><span class="chip">Erros <b id="dErr">0</b></span><span class="chip time">⏱ <b id="dTime">0:00</b></span></div>
+      <div class="deck" id="deck"></div>
+      <div class="dhint" id="dHint">Arraste a carta, toque na região ou use as teclas 1 a 5</div>
+      <div class="zones" id="zones"></div>
+    </section>
+
+    <section class="screen" id="scrFill" hidden>
+      <div class="fill-pick" id="fillPick">
+        <button class="btn2 back" id="fillBack" style="align-self:flex-start">← Regiões</button>
+        <div class="qline">Quais são os estados do…?</div>
+        <p>Sem opções na tela: você escreve de cabeça os estados da região, em qualquer ordem. Vale sem acento e vale a sigla. Travou, pede dica.</p>
+        <div class="count">Norte 7 · Nordeste 9 · Centro-Oeste 4 · Sudeste 4 · Sul 3 = 27</div>
+        <div class="seg" id="fillRegions"></div>
+        <label class="best" style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="fillKeys"> Prefiro tocar nas siglas em vez de digitar</label>
+      </div>
+      <div class="fill-grid" id="fillGame" hidden>
+        <div class="fill-map" id="fillMap"></div>
+        <div class="fill-side">
+          <div class="qline" id="fillQ" style="text-align:left"></div>
+          <div class="dhead" style="justify-content:flex-start"><span class="chip" id="fillStep" hidden></span><span class="chip">Faltam <b id="fillLeft">0</b></span><span class="chip">Erros <b id="fillErr">0</b></span><span class="chip time">⏱ <b id="fillTime">0:00</b></span></div>
+          <div class="slots" id="slots"></div>
+          <form class="fill-form" id="fillForm" autocomplete="off"><input id="fillInput" type="text" placeholder="Escreve um estado…" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" aria-label="Nome ou sigla do estado"><button class="btn2" type="submit">Vai</button></form>
+          <div class="sigkeys" id="sigKeys" hidden></div>
+          <div class="fill-msg" id="fillMsg" aria-live="polite"></div>
+          <div class="fill-actions"><button class="btn2" id="fillHint">Me dá uma dica</button><button class="btn2" id="fillGive">Desisto, mostra</button><button class="cta" id="fillNext" hidden>Próxima</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="scrCamp" hidden>
+      <div class="album-head">
+        <div><h2>Campanha</h2><p>Uma região por vez. Cada estado cai duas vezes, em modos diferentes. Fez 80%, libera a próxima. No fim, o chefão: o Brasil inteiro.</p></div>
+        <button class="btn2" id="btnCampBack">Voltar</button>
+      </div>
+      <div class="camp-grid">
+        <div class="camp-list" id="campList"></div>
+        <div class="yourmap"><div class="yourmap-card"><div class="yourmap-head"><span>Regiões vencidas</span><span class="yourmap-pct" id="campPct">0/6</span></div><div id="campMap"></div></div></div>
+      </div>
+    </section>
+
+    <section class="screen" id="scrAlbum" hidden>
+      <div class="album-head">
+        <div><h2>Álbum dos 27</h2><p>Cada estado tem cinco selos: <b>B</b>andeira, <b>C</b>apital, <b>M</b>apa, <b>G</b>entílico e <b>R</b>egião. Acertou três vezes seguidas, o selo fica verde. Toca num estado pra estudar.</p></div>
+        <button class="btn2" id="btnAlbumBack">Voltar</button>
+      </div>
+      <div id="albumBody" style="align-self:stretch;display:flex;flex-direction:column;gap:14px"></div>
+    </section>
+  </main>
+
+  <p class="credits">Bandeiras: Wikimedia Commons (domínio público). Mapa: <a href="https://github.com/VictorCazanave/svg-maps" target="_blank" rel="noopener">svg-maps</a> por Victor Cazanave, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.</p>
+  <div class="ticker" aria-hidden="true"><div id="ticker"></div></div>
+</div>
+
+<dialog id="sheet"></dialog>
+
+<script>
+// r: region · a: preposition ("do Acre", "da Bahia") · g: gentílico · t: what to notice on the flag
+const UF = [
+ {c:"ac",n:"Acre",cap:"Rio Branco",r:"n",a:"do",g:"acreano",t:"Diagonal amarela e verde com uma estrela vermelha no canto."},
+ {c:"al",n:"Alagoas",cap:"Maceió",r:"ne",a:"de",g:"alagoano",t:"Faixas verticais vermelha, branca e azul, brasão no meio."},
+ {c:"ap",n:"Amapá",cap:"Macapá",r:"n",a:"do",g:"amapaense",t:"Azul, verde e amarelo separados por linhas pretas e brancas, com um símbolo branco à esquerda."},
+ {c:"am",n:"Amazonas",cap:"Manaus",r:"n",a:"do",g:"amazonense",t:"Faixa vermelha entre duas brancas e um canto azul cheio de estrelinhas."},
+ {c:"ba",n:"Bahia",cap:"Salvador",r:"ne",a:"da",g:"baiano",t:"Triângulo branco num quadrado azul, listras vermelhas e brancas."},
+ {c:"ce",n:"Ceará",cap:"Fortaleza",r:"ne",a:"do",g:"cearense",t:"Parece a bandeira do Brasil, mas com o brasão do estado no círculo."},
+ {c:"df",n:"Distrito Federal",cap:"Brasília",r:"co",a:"do",g:"brasiliense",t:"Fundo branco com uma cruz verde e amarela no centro."},
+ {c:"es",n:"Espírito Santo",cap:"Vitória",r:"se",a:"do",g:"capixaba",t:"Azul, branco e rosa, com o lema “Trabalha e Confia”."},
+ {c:"go",n:"Goiás",cap:"Goiânia",r:"co",a:"de",g:"goiano",t:"Oito listras finas verdes e amarelas e cinco estrelas no canto azul."},
+ {c:"ma",n:"Maranhão",cap:"São Luís",r:"ne",a:"do",g:"maranhense",t:"Listras vermelhas, brancas e pretas, uma estrela branca no canto azul."},
+ {c:"mt",n:"Mato Grosso",cap:"Cuiabá",r:"co",a:"de",g:"mato-grossense",t:"Fundo azul, losango branco e estrela amarela num círculo verde."},
+ {c:"ms",n:"Mato Grosso do Sul",cap:"Campo Grande",r:"co",a:"de",g:"sul-mato-grossense",t:"Faixa branca na diagonal separando verde e azul, estrela amarela."},
+ {c:"mg",n:"Minas Gerais",cap:"Belo Horizonte",r:"se",a:"de",g:"mineiro",t:"Triângulo vermelho no branco e o lema “Libertas quae sera tamen”."},
+ {c:"pa",n:"Pará",cap:"Belém",r:"n",a:"do",g:"paraense",t:"Faixa branca na diagonal sobre o vermelho, estrela azul."},
+ {c:"pb",n:"Paraíba",cap:"João Pessoa",r:"ne",a:"da",g:"paraibano",t:"Preto e vermelho, com a palavra “NEGO”."},
+ {c:"pr",n:"Paraná",cap:"Curitiba",r:"s",a:"do",g:"paranaense",t:"Faixa branca na diagonal entre verdes, esfera azul escrita “Paraná”."},
+ {c:"pe",n:"Pernambuco",cap:"Recife",r:"ne",a:"de",g:"pernambucano",t:"Arco-íris, sol e estrela no azul, cruz vermelha no branco."},
+ {c:"pi",n:"Piauí",cap:"Teresina",r:"ne",a:"do",g:"piauiense",t:"Listras verdes e amarelas, estrela branca e a data 13 de março de 1823."},
+ {c:"rj",n:"Rio de Janeiro",cap:"Rio de Janeiro",r:"se",a:"do",g:"fluminense",t:"Quadros azuis e brancos com a águia do brasão no centro."},
+ {c:"rn",n:"Rio Grande do Norte",cap:"Natal",r:"ne",a:"do",g:"potiguar",t:"Verde em cima, branco embaixo, brasão no meio."},
+ {c:"rs",n:"Rio Grande do Sul",cap:"Porto Alegre",r:"s",a:"do",g:"gaúcho",t:"Diagonais verde, vermelha e amarela, brasão no centro."},
+ {c:"ro",n:"Rondônia",cap:"Porto Velho",r:"n",a:"de",g:"rondoniense",t:"Azul em cima, triângulo verde sobre o amarelo e estrela branca."},
+ {c:"rr",n:"Roraima",cap:"Boa Vista",r:"n",a:"de",g:"roraimense",t:"Azul, branco e verde em diagonal, estrela amarela e linha vermelha."},
+ {c:"sc",n:"Santa Catarina",cap:"Florianópolis",r:"s",a:"de",g:"catarinense",t:"Vermelho e branco com losango verde e brasão no centro."},
+ {c:"sp",n:"São Paulo",cap:"São Paulo",r:"se",a:"de",g:"paulista",t:"Treze listras pretas e brancas e o mapa do Brasil no canto vermelho."},
+ {c:"se",n:"Sergipe",cap:"Aracaju",r:"ne",a:"de",g:"sergipano",t:"Quatro faixas largas verdes e amarelas e cinco estrelas no canto azul (Goiás tem listras finas)."},
+ {c:"to",n:"Tocantins",cap:"Palmas",r:"n",a:"do",g:"tocantinense",t:"Um sol amarelo no meio de uma faixa branca, entre azul e amarelo."}
+];
+const REGIONS = {n:"Norte",ne:"Nordeste",co:"Centro-Oeste",se:"Sudeste",s:"Sul"};
+// flags that get mixed up; used to pick the wrong options in flag rounds
+const LOOKALIKES = [["go","se","pi","ma"],["ba","ma","am","sp"],["ce","mt","ro","sc"],["ac","to","ms","pa","rr"],["rj","rn","al","sc","rs","pr"],["pr","ms","pa","rr"],["pb","pe","es"]];
+const MODES = {flag:"Bandeira", cap:"Capital", capr:"Capital → Estado", map:"Mapa", click:"Onde fica?", gent:"Gentílico", reg:"Região"};
+const ALL_MODES = Object.keys(MODES);
+const MODE_NOTES = {
+  mix:"Um pouco de tudo, sorteado a cada rodada. O melhor pra decorar de verdade.",
+  flag:"Aparece a bandeira, você diz de qual estado é.",
+  cap:"Aparece o estado, você escolhe a capital.",
+  capr:"Aparece a capital, você diz de qual estado ela é.",
+  map:"Um estado acende no mapa. Qual é?",
+  click:"Aparece o nome, você toca no estado certo no mapa.",
+  gent:"Potiguar, capixaba, gaúcho… Quem nasce onde?",
+  reg:"Aparece o estado, você diz se é Norte, Nordeste, Centro-Oeste, Sudeste ou Sul. Sempre com o Brasil todo."
+};
+const SKILL = {flag:"f", cap:"c", capr:"c", map:"m", click:"m", gent:"g", reg:"r"};
+const SKILLS = ["f","c","m","g","r"], MAX_STARS = UF.length * SKILLS.length * 3;
+// campaign order: smallest regions first, then the whole country
+const STAGES = [{id:"se",name:"Sudeste"},{id:"s",name:"Sul"},{id:"co",name:"Centro-Oeste"},{id:"n",name:"Norte"},{id:"ne",name:"Nordeste"},{id:"all",name:"Brasil todo"}];
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = s => document.querySelector(s);
+const store = {
+  get(k,d){ try{ const v = localStorage.getItem("brasil:"+k); return v==null?d:JSON.parse(v) }catch(e){ return d } },
+  set(k,v){ try{ localStorage.setItem("brasil:"+k, JSON.stringify(v)) }catch(e){} }
+};
+const byCode = Object.fromEntries(UF.map(x=>[x.c,x]));
+const cap1 = s => s[0].toUpperCase() + s.slice(1);
+const urls = {};
+let DATA = null;
+
+/* ---------- background blobs ---------- */
+const cv = $("#bg"), cx = cv.getContext("2d");
+let blobs = [], W=0, H=0, pulse = 0, pulseColor = null;
+function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim() }
+function sizeBg(){ W = cv.width = Math.ceil(innerWidth/4); H = cv.height = Math.ceil(innerHeight/4); }
+function makeBlobs(){
+  const cols = ["--green","--yellow","--blue","--green","--orange"];
+  blobs = cols.map((c,i)=>({c, x:Math.random(), y:Math.random(), r:.28+Math.random()*.22, s:.00018+Math.random()*.00025, ph:i*1.7}));
+}
+function drawBg(t){
+  cx.clearRect(0,0,W,H);
+  const A = parseFloat(cssVar("--blob-a")) || .5;
+  for(const b of blobs){
+    const x = (b.x + Math.sin(t*b.s + b.ph)*.22) * W;
+    const y = (b.y + Math.cos(t*b.s*1.3 + b.ph)*.2) * H;
+    const r = b.r * Math.max(W,H) * (1 + Math.sin(t*.0007+b.ph)*.12);
+    const g = cx.createRadialGradient(x,y,0,x,y,r);
+    const col = cssVar(b.c);
+    g.addColorStop(0, col); g.addColorStop(1, col+"00");
+    cx.globalAlpha = A; cx.fillStyle = g; cx.beginPath(); cx.arc(x,y,r,0,6.283); cx.fill();
+  }
+  if(pulse > 0.01){
+    const g = cx.createRadialGradient(W/2,H*.4,0,W/2,H*.4,Math.max(W,H)*(1.1-pulse*.5));
+    g.addColorStop(0, pulseColor); g.addColorStop(1, pulseColor+"00");
+    cx.globalAlpha = pulse*.7; cx.fillStyle = g; cx.fillRect(0,0,W,H); pulse *= .94;
+  }
+  cx.globalAlpha = 1;
+}
+const turb = document.getElementById("turb");
+function loop(t){
+  drawBg(t);
+  const fx = .006 + Math.sin(t*.0009)*.0018, fy = .018 + Math.cos(t*.0011)*.004;
+  turb.setAttribute("baseFrequency", fx.toFixed(5)+" "+fy.toFixed(5));
+  requestAnimationFrame(loop);
+}
+sizeBg(); makeBlobs(); addEventListener("resize", sizeBg);
+if(REDUCED) drawBg(0); else requestAnimationFrame(loop);
+
+/* ---------- ticker ---------- */
+(function(){
+  const words = ["Decora esse Brasil","27 unidades federativas","Capixaba é do Espírito Santo","Potiguar é do Rio Grande do Norte","“NEGO” tá na bandeira da Paraíba","Palmas é a capital mais nova","Errou? Ela volta já já","Desafio novo todo dia","60 segundos no relógio","Goiás e Sergipe são primas"];
+  const html = words.map(w=>`<span>${w}</span>`).join("");
+  $("#ticker").innerHTML = html + html;
+})();
+
+/* ---------- sound ---------- */
+let audio = null, soundOn = store.get("sound", true);
+function syncSound(){ $("#soundLbl").textContent = soundOn?"on":"off"; $("#sound").setAttribute("aria-pressed", soundOn) }
+syncSound();
+$("#sound").onclick = ()=>{ soundOn = !soundOn; store.set("sound", soundOn); syncSound(); };
+function blip(kind){
+  if(!soundOn) return;
+  try{
+    audio = audio || new (window.AudioContext||window.webkitAudioContext)();
+    const now = audio.currentTime;
+    const notes = kind==="ok" ? [660, 990] : kind==="bad" ? [220, 165] : kind==="up" ? [523, 659, 784] : kind==="win" ? [523, 659, 784, 1047] : kind==="tick" ? [880] : [520];
+    notes.forEach((f,i)=>{
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.type = kind==="bad" ? "sawtooth" : "triangle";
+      o.frequency.setValueAtTime(f, now + i*.08);
+      g.gain.setValueAtTime(0.0001, now + i*.08);
+      g.gain.exponentialRampToValueAtTime(kind==="bad"||kind==="tick"?.05:.12, now + i*.08 + .015);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + i*.08 + .22);
+      o.connect(g).connect(audio.destination); o.start(now + i*.08); o.stop(now + i*.08 + .25);
+    });
+  }catch(e){}
+}
+
+/* ---------- randomness: crypto by default, seeded for the daily challenge ---------- */
+let RNG = null;
+const rnd = n => { if(RNG) return Math.floor(RNG()*n); try{ const u = new Uint32Array(1); crypto.getRandomValues(u); return u[0] % n }catch(e){ return Math.random()*n|0 } };
+const shuffle = a => { for(let i=a.length-1;i>0;i--){ const j=rnd(i+1); [a[i],a[j]]=[a[j],a[i]] } return a };
+function seeded(str){ let h = 1779033703 ^ str.length; for(let i=0;i<str.length;i++){ h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = h<<13 | h>>>19 }
+  return ()=>{ h = Math.imul(h ^ h>>>16, 2246822507); h = Math.imul(h ^ h>>>13, 3266489909); h ^= h>>>16; return (h>>>0)/4294967296 } }
+function dayKey(offset=0){ const d = new Date(); d.setDate(d.getDate()+offset); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}` }
+
+/* ---------- mastery: 0..3 per state per skill (f flag, c capital, m map, g gentílico) ---------- */
+let M = store.get("mastery", {});
+const lvl = (c,k) => (M[c] && M[c][k]) || 0;
+function bump(c, k, right){
+  M[c] = M[c] || {};
+  const before = M[c][k] || 0;
+  M[c][k] = right ? Math.min(3, before+1) : Math.max(0, before-2);
+  store.set("mastery", M);
+  return right && before===2;   // just turned green
+}
+const stateStars = c => SKILLS.reduce((s,k)=>s+lvl(c,k),0);
+const stars = () => UF.reduce((s,x)=>s + stateStars(x.c), 0);
+const pctBrasil = () => Math.round(stars()/MAX_STARS*100);
+
+/* ---------- map ---------- */
+function mapSVG(opts={}){
+  const {hl=null, fill=null, cls=""} = opts;
+  let s = `<svg viewBox="0 0 613 639" class="${cls}" role="img" aria-label="Mapa do Brasil">`;
+  for(const x of UF){
+    const f = fill ? fill(x) : {fill:"var(--map-base)", op:1};
+    s += `<path data-c="${x.c}" d="${DATA.map[x.c]}" fill="${f.fill}" fill-opacity="${f.op}" stroke="var(--map-stroke)" stroke-width="1" stroke-linejoin="round" ${x.c===hl?'class="target"':''}>${cls.includes("clickmap")?"":`<title>${x.n}</title>`}</path>`;
+  }
+  return s + `</svg>`;
+}
+const NS = "http://www.w3.org/2000/svg";
+function centerOf(svg, c){ const b = svg.querySelector(`path[data-c="${c}"]`).getBBox(); return {x:b.x+b.width/2, y:b.y+b.height/2, size:Math.max(b.width,b.height)} }
+// small states get a pulsing marker so they are findable
+function addMarker(svg, c, big){
+  if(!svg.querySelector(`path[data-c="${c}"]`)) return;
+  const {x, y, size} = centerOf(svg, c);
+  if(size >= 60) return;
+  const r = big ? 9 : 6;
+  const ring = document.createElementNS(NS,"circle"); ring.setAttribute("cx",x); ring.setAttribute("cy",y); ring.setAttribute("r",r*1.6); ring.setAttribute("class","ring"); svg.appendChild(ring);
+  const dot = document.createElementNS(NS,"circle"); dot.setAttribute("cx",x); dot.setAttribute("cy",y); dot.setAttribute("r",r); dot.setAttribute("class","dot"); svg.appendChild(dot);
+}
+// tiny states (DF, SE, AL…) get a bigger invisible-ish tap target
+function addHits(svg, onPick){
+  for(const u of UF){
+    const {x, y, size} = centerOf(svg, u.c);
+    if(size >= 40) continue;
+    const h = document.createElementNS(NS,"circle"); h.setAttribute("cx",x); h.setAttribute("cy",y); h.setAttribute("r",13); h.setAttribute("class","hit"); h.dataset.c = u.c;
+    svg.appendChild(h);
+  }
+  svg.querySelectorAll("[data-c]").forEach(el=>el.addEventListener("click", ()=>onPick(el.dataset.c)));
+}
+const regionColor = r => `var(--r-${r})`;
+
+/* ---------- settings ---------- */
+const settings = Object.assign({mode:"mix", region:"all", rounds:"10"}, store.get("settings", {}));
+// older saves used one mode per question type; fold them into the grouped tiles
+settings.mode = ({cap:"caps", capr:"caps", map:"mapa", click:"mapa", reg:"mix"})[settings.mode] || settings.mode;
+const PLAY_MODES = [
+  {v:"mix", name:"Misturado", desc:"Um pouco de tudo. O melhor pra decorar.", badge:"Recomendado"},
+  {v:"flag", name:"Bandeiras", desc:"Vê a bandeira e diz o estado."},
+  {v:"caps", name:"Capitais", desc:"Estado → capital e capital → estado."},
+  {v:"mapa", name:"Mapa", desc:"Acha o estado no mapa do Brasil."},
+  {v:"gent", name:"Gentílicos", desc:"Potiguar, capixaba, gaúcho… é de onde?"}
+];
+function bindSeg(id, key){
+  const el = $(id);
+  el.querySelectorAll("button").forEach(b=>{
+    b.setAttribute("aria-pressed", b.dataset.v===settings[key]);
+    b.onclick = ()=>{ settings[key]=b.dataset.v; store.set("settings", settings);
+      el.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed", x===b)); updateSetup(); blip("tap"); };
+  });
+}
+bindSeg("#segRegion","region"); bindSeg("#segRounds","rounds");
+const regionPool = r => UF.filter(x => r==="all" || x.r===r);
+// a free game reads its options from cfg first (e.g. the region quiz), then from the setup screen
+const optOf = (cfg, k) => (cfg && cfg[k] != null) ? cfg[k] : settings[k];
+const regionOf = cfg => optOf(cfg,"mode")==="reg" ? "all" : optOf(cfg,"region");
+const timedOf = cfg => optOf(cfg,"rounds")==="60s";
+const bestKey = cfg => "best-" + optOf(cfg,"mode") + (timedOf(cfg) ? "-60s" : "");
+function roundsOf(cfg){ const n = regionPool(regionOf(cfg)).length, r = optOf(cfg,"rounds"); return r==="all" ? n : +r; }
+
+function dailyInfo(){
+  const d = store.get("daily", null), st = store.get("dailyStreak", {last:null, n:0});
+  const alive = st.last===dayKey(0) || st.last===dayKey(-1);
+  return {doneToday: d && d.date===dayKey(0) ? d : null, streak: alive ? st.n : 0};
+}
+function updateStart(){
+  $("#pct").textContent = pctBrasil() + "%";
+  const box = $("#yourMap");
+  box.innerHTML = mapSVG({fill: x => { const v = stateStars(x.c); return {fill: regionColor(x.r), op: v ? .22 + v/15*.78 : .08} }});
+  box.querySelectorAll("path").forEach(p=>p.onclick = ()=>openSheet(p.dataset.c));
+  $("#legend").innerHTML = `<span>Toque num estado pra estudar · mais cor = mais decorado</span>`;
+  const di = dailyInfo();
+  $("#dailySub").textContent = di.doneToday ? `Feito hoje: ${di.doneToday.correct}/${di.doneToday.n}` + (di.streak ? ` · ${di.streak} ${di.streak===1?"dia":"dias"} seguidos` : "") : di.streak ? `${di.streak} ${di.streak===1?"dia":"dias"} seguidos. Não quebra!` : "10 perguntas novas todo dia";
+  const camp = store.get("camp", {}), cleared = STAGES.filter(s=>camp[s.id]).length;
+  $("#campSub").textContent = cleared ? `${cleared} de 6 fases vencidas` : "Uma região por vez, até o Brasil todo";
+}
+function updateSetup(){
+  const n = regionPool(regionOf(settings)).length;
+  const reg = settings.region==="all" ? "Brasil todo" : REGIONS[settings.region];
+  const r = settings.rounds;
+  $("#advSum").textContent = `${reg} · ${r==="60s" ? "60 segundos" : r==="all" ? `${n} perguntas` : r + " perguntas"}`;
+  document.querySelectorAll("#modeTiles .mtile").forEach(t=>t.setAttribute("aria-pressed", t.dataset.v===settings.mode));
+}
+function previewOf(v){
+  const f = c => `<img src="${url(c)}" alt="">`;
+  if(v==="mix") return `<div class="stack">${f("ba")}${f("sp")}${f("pe")}</div>`;
+  if(v==="flag") return f("rs");
+  if(v==="caps") return `<span class="word" style="background:var(--yellow)">Salvador?</span>`;
+  if(v==="mapa") return mapSVG({hl:"mt"});
+  return `<span class="word" style="background:var(--orange)">Capixaba?</span>`;
+}
+function openSetup(){
+  const box = $("#modeTiles");
+  if(!box.children.length){
+    PLAY_MODES.forEach(m=>{
+      const b = document.createElement("button"); b.className = "mtile"; b.dataset.v = m.v;
+      b.innerHTML = `<div class="pv">${previewOf(m.v)}${m.badge ? `<span class="badge">${m.badge}</span>` : ""}</div><b>${m.name}</b><small>${m.desc}</small>`;
+      b.onclick = ()=>{ settings.mode = m.v; store.set("settings", settings); blip("tap"); startFree(); };
+      box.appendChild(b);
+    });
+  }
+  updateSetup(); show("#scrSetup");
+}
+function openRegions(){
+  stopGame();
+  $("#regMap").innerHTML = mapSVG({fill: x => ({fill: regionColor(x.r), op:.85})});
+  $("#regLegend").innerHTML = Object.entries(REGIONS).map(([k,v])=>`<span><i style="background:var(--r-${k})"></i>${v}</span>`).join("");
+  show("#scrRegions");
+}
+
+/* ---------- screens ---------- */
+const SCREENS = ["#scrStart","#scrSetup","#scrRegions","#scrPlay","#scrEnd","#scrAlbum","#scrCamp","#scrDrag","#scrFill","#loading"];
+function show(id){
+  SCREENS.forEach(s=>$(s).hidden = s!==id);
+  const playing = id==="#scrPlay";
+  ["#chipScore","#chipMult","#chipStreak"].forEach(s=>$(s).hidden = !playing);
+  $("#chipTime").hidden = !(playing && G.timed);
+  $("#main").scrollTop = 0;
+  if(!REDUCED) $(id).animate([{opacity:0, transform:"translateY(18px) scale(.98)"},{opacity:1, transform:"none"}],{duration:520, easing:"cubic-bezier(.2,.9,.3,1.2)"});
+}
+function stopGame(){ clearTimeout(G.timer); clearInterval(G.clock); clearInterval(D.clock); D.on = false; clearInterval(F.clock); F.on = false; G.waiting = false; G.locked = true; RNG = null; }
+function goHome(){ stopGame(); updateStart(); show("#scrStart"); }
+$("#logo").onclick = ()=>{ if(DATA) goHome(); };
+
+/* ---------- study sheet ---------- */
+function pipsHTML(c, long){
+  const L = {f:"B",c:"C",m:"M",g:"G",r:"R"};
+  return SKILLS.map(k=>`<span class="pip" data-l="${lvl(c,k)}">${L[k]}${long ? " " + "●".repeat(lvl(c,k)) + "○".repeat(3-lvl(c,k)) : ""}</span>`).join("");
+}
+function openSheet(c){
+  const x = byCode[c], d = $("#sheet");
+  d.innerHTML = `<div class="sheet">
+    <img class="sflag" src="${url(c)}" alt="Bandeira ${x.a} ${x.n}">
+    <div><h2>${x.n}</h2>
+      <dl><dt>Capital</dt><dd>${x.cap}</dd><dt>Sigla</dt><dd>${c.toUpperCase()}</dd><dt>Região</dt><dd>${REGIONS[x.r]}</dd><dt>Quem nasce lá</dt><dd>${x.g}</dd></dl>
+      <div class="pips" style="margin-top:12px">${pipsHTML(c, true)}</div>
+    </div>
+    <div class="smap">${mapSVG({hl:c})}</div>
+    <p class="tip"><b>Repara na bandeira</b>${x.t}</p>
+    <button class="btn2 close" id="sheetClose">Fechar</button></div>`;
+  d.showModal();
+  addMarker(d.querySelector(".smap svg"), c, false);
+  $("#sheetClose").onclick = ()=>d.close();
+}
+$("#sheet").addEventListener("click", e=>{ if(e.target.id==="sheet") $("#sheet").close() });
+
+/* ---------- album ---------- */
+function renderAlbum(){
+  const body = $("#albumBody"); body.innerHTML = "";
+  $("#scrAlbum h2").textContent = `Álbum dos 27 · ${pctBrasil()}%`;
+  for(const [r,name] of Object.entries(REGIONS)){
+    const sec = document.createElement("div"); sec.className = "region";
+    sec.innerHTML = `<h3><i style="background:var(--r-${r})"></i>${name}</h3><div class="cards"></div>`;
+    const cards = sec.querySelector(".cards");
+    UF.filter(x=>x.r===r).forEach(x=>{
+      const b = document.createElement("button"); b.className = "card";
+      b.innerHTML = `<img src="${url(x.c)}" alt=""><b>${x.n}</b><small>${x.cap}</small><span class="pips">${pipsHTML(x.c)}</span>`;
+      b.onclick = ()=>openSheet(x.c);
+      cards.appendChild(b);
+    });
+    body.appendChild(sec);
+  }
+}
+$("#btnAlbum").onclick = ()=>{ blip("tap"); renderAlbum(); show("#scrAlbum") };
+$("#btnAlbumBack").onclick = goHome;
+
+/* ---------- campaign ---------- */
+const starStr = n => "★".repeat(n) + "☆".repeat(3-n);
+function stageUnlocked(i){ const camp = store.get("camp", {}); return i===0 || !!camp[STAGES[i-1].id]; }
+function stageQueue(st){
+  const ufs = regionPool(st.id);
+  if(st.id==="all") return shuffle(ufs.map(u=>({c:u.c, mode:ALL_MODES[rnd(ALL_MODES.length)]})));
+  // every state twice, in two different modes, second lap after the first
+  const a = [], b = [];
+  ufs.forEach(u=>{ const [m1, m2] = shuffle(ALL_MODES.filter(m=>m!=="reg")); a.push({c:u.c, mode:m1}); b.push({c:u.c, mode:m2}); });
+  return [...shuffle(a), ...shuffle(b)];
+}
+function renderCamp(){
+  const camp = store.get("camp", {}), list = $("#campList"); list.innerHTML = "";
+  STAGES.forEach((st,i)=>{
+    const open = stageUnlocked(i), n = regionPool(st.id).length, q = st.id==="all" ? n : n*2;
+    const b = document.createElement("button"); b.className = "stg"; b.setAttribute("aria-disabled", !open);
+    const col = st.id==="all" ? "var(--yellow)" : regionColor(st.id);
+    b.innerHTML = `<span class="num" style="background:${col}">${i+1}</span><span><b>${st.name}</b><small>${open ? `${n} estados · ${q} perguntas` : `Faça 80% em ${STAGES[i-1].name} pra liberar`}</small></span><span class="st">${open ? starStr(camp[st.id]||0) : "🔒"}</span>`;
+    b.onclick = ()=>{ if(!open){ blip("bad"); b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); return; } blip("tap"); startCamp(i); };
+    list.appendChild(b);
+  });
+  const cleared = STAGES.filter(s=>camp[s.id]).length;
+  $("#campPct").textContent = `${cleared}/6`;
+  $("#campMap").innerHTML = mapSVG({fill: x => ({fill: regionColor(x.r), op: camp[x.r] ? .9 : .08})});
+}
+$("#btnCamp").onclick = ()=>{ blip("tap"); renderCamp(); show("#scrCamp") };
+$("#btnCampBack").onclick = goHome;
+
+/* ---------- game ---------- */
+const G = {queue:[], i:0, score:0, streak:0, bestStreak:0, correct:0, answered:0, misses:[], locked:false, cur:null, opts:[], timer:0, clock:0, waiting:false, mastered:0, cfg:null, timed:false};
+// weighted order without replacement: weaker items come first more often
+const weightedOrder = (items, w) => items.map(x=>({x, k: Math.pow(Math.random(), 1/w(x))})).sort((a,b)=>b.k-a.k).map(o=>o.x);
+const modesOf = (mode, region) => mode==="mix" ? ALL_MODES.filter(m => m!=="reg" || region==="all") : mode==="caps" ? ["cap","capr"] : mode==="mapa" ? ["map","click"] : [mode];
+
+function buildQueue(n, cfg){
+  const ufs = regionPool(regionOf(cfg)), modes = modesOf(optOf(cfg,"mode"), regionOf(cfg));
+  const pairs = []; ufs.forEach(u=>modes.forEach(m=>pairs.push({c:u.c, mode:m})));
+  const weight = p => 1 + (3 - lvl(p.c, SKILL[p.mode])) * 2;
+  const out = []; let used = new Set();
+  while(out.length < n){
+    const order = weightedOrder(pairs, weight).filter(p=>!used.has(p.c));
+    if(!order.length){ used = new Set(); continue; }
+    const p = order[0]; out.push({...p}); used.add(p.c);
+    if(used.size >= ufs.length) used = new Set(out.slice(-1).map(q=>q.c));
+  }
+  return out;
+}
+function dailyQueue(){
+  RNG = seeded("brasil-" + dayKey(0));
+  return shuffle(UF.slice()).slice(0,10).map(u=>({c:u.c, mode:ALL_MODES[rnd(ALL_MODES.length)]}));
+}
+const multOf = s => s>=10?4 : s>=6?3 : s>=3?2 : 1;
+function url(code){ return urls[code] || (urls[code] = URL.createObjectURL(new Blob([DATA.flags[code]],{type:"image/svg+xml"}))) }
+
+// cfg.kind: free | daily | camp | retry
+function start(cfg){
+  stopGame();
+  if(cfg.kind==="drag"){ G.cfg = cfg; return startDrag(); }
+  if(cfg.kind==="fill"){ G.cfg = cfg; return startFill(cfg); }
+  let queue;
+  if(cfg.kind==="free") queue = buildQueue(timedOf(cfg) ? 200 : roundsOf(cfg), cfg);
+  else if(cfg.kind==="daily") queue = dailyQueue();
+  else if(cfg.kind==="camp") queue = stageQueue(STAGES[cfg.stage]);
+  else queue = shuffle(cfg.list.map(q=>({c:q.c, mode:q.mode})));
+  G.cfg = cfg; G.timed = cfg.kind==="free" && timedOf(cfg);
+  Object.assign(G,{queue, base:queue.length, i:0, score:0, streak:0, bestStreak:0, correct:0, answered:0, misses:[], locked:false, mastered:0, timeUp:false});
+  syncHud(); show("#scrPlay");
+  if(G.timed){
+    G.deadline = Date.now() + 60000;
+    G.clock = setInterval(tickClock, 200); tickClock();
+  }
+  next();
+}
+const startFree = () => start({kind:"free", mode:settings.mode, region:settings.region, rounds:settings.rounds});
+const startCamp = i => start({kind:"camp", stage:i});
+function tickClock(){
+  const left = Math.max(0, Math.ceil((G.deadline - Date.now())/1000));
+  const el = $("#time"); if(el.textContent !== String(left)){ el.textContent = left; if(left<=5 && left>0) blip("tick"); }
+  $("#chipTime").dataset.low = left<=10 ? "1" : "0";
+  if(left<=0){ clearInterval(G.clock); G.timeUp = true; if(!G.locked){ G.locked = true; finish(); } }
+}
+const ansKey = q => q.mode==="reg" ? byCode[q.c].r : q.c;
+const REG_OPTS = Object.entries(REGIONS).map(([c,n])=>({c, n, cap:n}));
+function pickOptions(q){
+  if(q.mode==="click") return [];
+  if(q.mode==="reg") return REG_OPTS;
+  const ans = byCode[q.c];
+  const cand = UF.filter(x => x.c!==ans.c);
+  const picks = [];
+  const take = (arr, upTo) => { for(const x of shuffle(arr.slice())){ if(picks.length>=upTo) break; if(!picks.includes(x)) picks.push(x) } };
+  if(q.mode==="flag"){
+    const look = new Set(LOOKALIKES.filter(g=>g.includes(ans.c)).flat());
+    take(cand.filter(x=>look.has(x.c)), 2);
+  }
+  take(cand.filter(x=>x.r===ans.r), q.mode==="map" ? 3 : 2);
+  take(cand, 3);
+  // "Rio de Janeiro" capital of "Rio de Janeiro" etc: never offer two identical labels
+  const label = x => q.mode==="cap" ? x.cap : x.n;
+  const seen = new Set([label(ans)]);
+  const clean = picks.filter(x => !seen.has(label(x)) && seen.add(label(x))).slice(0,3);
+  return shuffle([ans, ...clean]);
+}
+function syncHud(){
+  $("#score").textContent = G.score; $("#streak").textContent = G.streak;
+  const m = multOf(G.streak); $("#mult").textContent = m; $("#chipMult").dataset.m = m;
+}
+function renderStage(q){
+  const x = byCode[q.c], card = $("#card"), stage = $("#stage");
+  stage.classList.toggle("is-map", q.mode==="map");
+  stage.classList.toggle("is-click", q.mode==="click");
+  card.style.background = "";
+  if(q.mode==="flag"){
+    $("#qline").innerHTML = "Qual estado tem essa bandeira?";
+    card.className = "flagcard";
+    card.innerHTML = `<div class="flagwrap"><img src="${url(x.c)}" alt="Bandeira misteriosa"></div><div class="cloth"></div>`;
+  } else if(q.mode==="cap"){
+    $("#qline").innerHTML = `Qual é a capital ${x.a} <em>${x.n}</em>?`;
+    card.className = "flagcard";
+    card.innerHTML = `<div class="namecard" style="background:${regionColor(x.r)}"><img src="${url(x.c)}" alt=""><div><div class="big">${x.n}</div><div class="sub">${REGIONS[x.r]} · capital?</div></div></div>`;
+  } else if(q.mode==="capr"){
+    $("#qline").innerHTML = `<em>${x.cap}</em> é capital de qual estado?`;
+    card.className = "flagcard";
+    card.innerHTML = `<div class="namecard capital"><div><div class="big">${x.cap}</div><div class="sub">capital de…?</div></div></div>`;
+  } else if(q.mode==="gent"){
+    $("#qline").innerHTML = `Quem é <em>${x.g}</em> nasceu em qual estado?`;
+    card.className = "flagcard";
+    card.innerHTML = `<div class="namecard gent"><div><div class="big">${cap1(x.g)}</div><div class="sub">gentílico · nasceu onde?</div></div></div>`;
+  } else if(q.mode==="reg"){
+    const art = {do:"o ", da:"a ", de:""}[x.a];
+    $("#qline").innerHTML = `Em que região fica ${art}<em>${x.n}</em>?`;
+    card.className = "flagcard";
+    card.innerHTML = `<div class="namecard reg"><img src="${url(x.c)}" alt=""><div><div class="big">${x.n}</div><div class="sub">capital ${x.cap} · qual região?</div></div></div>`;
+  } else if(q.mode==="map"){
+    $("#qline").innerHTML = "Que estado é esse que acendeu?";
+    card.className = "mapcard";
+    card.innerHTML = mapSVG({hl:x.c});
+    addMarker(card.querySelector("svg"), x.c, true);
+  } else {
+    $("#qline").innerHTML = `Onde fica ${x.c==="df" ? "o" : ""} <em>${x.n}</em>?`.replace("  "," ");
+    card.className = "mapcard";
+    card.innerHTML = mapSVG({cls:"clickmap"});
+    addHits(card.querySelector("svg"), c=>choose(c, -1));
+  }
+}
+function next(){
+  if(G.timeUp) return finish();
+  if(G.i >= G.queue.length) return finish();
+  const q = G.cur = G.queue[G.i]; G.opts = pickOptions(q); G.locked = false; G.waiting = false;
+  renderStage(q);
+  $("#stamp").textContent = G.timed ? "#" + String(G.i+1).padStart(2,"0") : String(G.i+1).padStart(2,"0") + "/" + String(G.queue.length).padStart(2,"0");
+  const tag = $("#tag"); tag.textContent = q.retry ? "Revanche" : MODES[q.mode]; tag.classList.toggle("retry", !!q.retry);
+  if(G.queue[G.i+1]) { const pre = new Image(); pre.src = url(G.queue[G.i+1].c); }
+  const box = $("#answers"); box.innerHTML = ""; box.hidden = q.mode==="click"; box.classList.toggle("five", q.mode==="reg");
+  G.opts.forEach((o,k)=>{
+    const b = document.createElement("button");
+    b.className = "ans";
+    b.innerHTML = `<kbd>${k+1}</kbd>${q.mode==="cap" ? o.cap : o.n}`;
+    b.onclick = ()=>choose(o.c, k);
+    box.appendChild(b);
+    if(!REDUCED) b.animate([{opacity:0, transform:`translateY(16px) rotate(${k%2?2:-2}deg)`},{opacity:1, transform:"none"}],{duration:480, delay:80+k*60, easing:"cubic-bezier(.2,.9,.3,1.3)", fill:"backwards"});
+  });
+  const rv = $("#reveal"); rv.className = "reveal"; rv.onclick = null;
+  const hint = q.mode==="click" ? "Toque no estado no mapa. Os pequenos têm um círculo pontilhado." : G.i===0 ? `Teclas 1 a ${G.opts.length} também funcionam` : "";
+  rv.innerHTML = `<div class="hint" style="width:100%">${hint}</div>`;
+  const card = $("#card");
+  const tilt = q.mode==="click" ? 0 : (Math.random()*4-2).toFixed(1);
+  card.style.transform = `rotate(${tilt}deg)`;
+  if(!REDUCED) card.animate([
+    {transform:`translateX(40px) rotate(${+tilt+8}deg) scale(.7)`, opacity:0},
+    {transform:`rotate(${tilt}deg) scale(1)`, opacity:1}],{duration:620, easing:"cubic-bezier(.2,1.1,.3,1.15)"});
+}
+function showReveal(right){
+  const x = byCode[G.cur.c], rv = $("#reveal");
+  rv.className = "reveal on";
+  const isReg = G.cur.mode==="reg";
+  const why = isReg ? `${REGIONS[x.r]}: ` + UF.filter(u=>u.r===x.r).map(u=>u.c.toUpperCase()).join(", ") : G.cur.mode==="flag" && !right ? x.t : REGIONS[x.r] + " · quem nasce lá é " + x.g;
+  const mini = isReg ? mapSVG({hl:x.c, fill: u => ({fill: u.r===x.r ? regionColor(u.r) : "var(--map-base)", op: u.r===x.r ? .55 : 1})}) : mapSVG({hl:x.c});
+  rv.innerHTML = `<div class="mini">${mini}</div><img class="rflag" src="${url(x.c)}" alt=""><div class="rtxt">${isReg ? `<b>${x.n}</b> fica no <b>${REGIONS[x.r]}</b>` : `${right?"":"Era "}<b>${x.n}</b> · capital ${x.cap}`}<small>${why}</small></div><span class="skip">toque ou Enter ›</span>`;
+  addMarker(rv.querySelector(".mini svg"), x.c, false);
+  if(!REDUCED) rv.animate([{opacity:0, transform:"translateY(8px)"},{opacity:1, transform:"none"}],{duration:280, easing:"ease-out"});
+  rv.onclick = advance;
+}
+function choose(c, k){
+  if(G.locked) return; G.locked = true; G.answered++;
+  const q = G.cur, right = c === ansKey(q);
+  let okEl = null;
+  if(q.mode==="click"){
+    const svg = $("#card svg");
+    svg.querySelectorAll(`path[data-c="${q.c}"]`).forEach(p=>p.classList.add("hit-ok"));
+    if(!right) svg.querySelectorAll(`path[data-c="${c}"]`).forEach(p=>p.classList.add("hit-bad"));
+    svg.querySelectorAll("[data-c]").forEach(el=>el.style.pointerEvents = "none");
+    svg.querySelectorAll(".hit").forEach(h=>h.remove());
+    addMarker(svg, q.c, true);
+    okEl = $("#stage");
+  } else {
+    const btns = [...document.querySelectorAll(".ans")];
+    const rk = G.opts.findIndex(o=>o.c===ansKey(q));
+    btns.forEach((b,i)=>{ b.disabled = true; if(i!==k && i!==rk) b.classList.add("dim") });
+    btns[rk].classList.add("ok");
+    if(!right) btns[k].classList.add("bad","shake");
+    okEl = btns[rk];
+  }
+  const leveledUp = bump(q.c, SKILL[q.mode], right);
+  if(right){
+    G.streak++; G.correct++; G.bestStreak = Math.max(G.bestStreak, G.streak);
+    const pts = 100 * multOf(G.streak); G.score += pts;
+    burst(okEl); floatText(leveledUp ? "Selo verde!" : "+"+pts); blip(leveledUp ? "up" : "ok");
+    if(leveledUp) G.mastered++;
+    pulse = 1; pulseColor = cssVar("--green");
+    if(!REDUCED) $("#card").animate([{scale:1},{scale:1.04},{scale:.99},{scale:1}],{duration:500, easing:"ease-out"});
+  } else {
+    G.streak = 0; G.misses.push({q, said: q.mode==="reg" ? REG_OPTS.find(o=>o.c===c) : byCode[c]});
+    blip("bad");
+    pulse = 1; pulseColor = cssVar("--pink");
+    if(!REDUCED) $("#card").animate([{translate:"0 0"},{translate:"-10px 0"},{translate:"8px 0"},{translate:"0 0"}],{duration:380});
+    // the same question comes back a few rounds later
+    if(!q.retry && G.queue.filter(z=>z.retry).length < Math.max(3, Math.ceil(G.base/2))){ const at = Math.min(G.i + 3 + rnd(2), G.queue.length); G.queue.splice(at, 0, {c:q.c, mode:q.mode, retry:true}); }
+  }
+  syncHud(); showReveal(right);
+  G.waiting = true;
+  const wait = G.timed ? (right ? 650 : 1600) : (right ? 1500 : 3600);
+  G.timer = setTimeout(advance, wait);
+}
+function advance(){
+  if(!G.waiting) return; G.waiting = false; clearTimeout(G.timer);
+  G.i++;
+  if(G.timeUp) return finish();
+  outThen(next);
+}
+function outThen(fn){
+  if(REDUCED) return fn();
+  const a = $("#card").animate([{opacity:1},{transform:"translateX(-60px) rotate(-12deg) scale(.8)", opacity:0}],{duration:240, easing:"ease-in", fill:"forwards"});
+  document.querySelectorAll(".ans").forEach((b,i)=>b.animate([{opacity:1},{opacity:0, transform:"translateY(10px)"}],{duration:200, delay:i*25, fill:"forwards"}));
+  a.onfinish = ()=>{ a.cancel(); fn() };
+}
+function burst(el){
+  if(REDUCED || !el) return;
+  const r = el.getBoundingClientRect(), cols = ["--green","--yellow","--blue","--orange"].map(cssVar);
+  for(let i=0;i<16;i++){
+    const p = document.createElement("div"); p.className = "particle";
+    const s = 8 + Math.random()*16; p.style.cssText = `width:${s}px;height:${s}px;left:${r.left + r.width/2}px;top:${r.top + r.height/2}px;background:${cols[i%4]}`;
+    document.body.appendChild(p);
+    const ang = Math.random()*6.283, d = 60 + Math.random()*120;
+    p.animate([{transform:"translate(-50%,-50%) scale(1)", opacity:1},{transform:`translate(${Math.cos(ang)*d - s/2}px,${Math.sin(ang)*d - s/2 - 40}px) scale(0) rotate(${Math.random()*360}deg)`, opacity:0}],
+      {duration:700+Math.random()*400, easing:"cubic-bezier(.1,.8,.3,1)"}).onfinish = ()=>p.remove();
+  }
+}
+function floatText(t){
+  if(REDUCED) return;
+  const f = document.createElement("div"); f.className = "floater"; f.textContent = t;
+  $("#stage").appendChild(f);
+  f.animate([{transform:"translate(-50%,0) scale(.6) rotate(-6deg)", opacity:0},{transform:"translate(-50%,-30px) scale(1.15) rotate(3deg)", opacity:1, offset:.3},{transform:"translate(-50%,-90px) scale(1) rotate(-2deg)", opacity:0}],{duration:1000, easing:"ease-out"}).onfinish = ()=>f.remove();
+}
+function finish(){
+  clearTimeout(G.timer); clearInterval(G.clock); G.waiting = false; RNG = null;
+  const cfg = G.cfg, n = Math.max(1, G.answered), acc = Math.round(G.correct/n*100);
+  $("#endScore").textContent = G.score; $("#endLabel").textContent = "Pontos";
+  let verdict = acc===100 ? "Perfeito. O professor de Geografia ia chorar de orgulho." : acc>=80 ? "Mandou muito. Já dá pra ser guia turístico." : acc>=55 ? "Tá voltando! Mais umas rodadas e fecha." : acc>=30 ? "Ainda meio perdido no mapa, mas bora." : "O Brasil é grande mesmo. Bora de novo?";
+  const chips = [];
+  const nextBtn = $("#btnNext"); nextBtn.hidden = true;
+  if(G.timed){
+    verdict = `${G.correct} ${G.correct===1?"acerto":"acertos"} em 60 segundos. ` + (G.correct>=20 ? "Rápido demais!" : G.correct>=10 ? "Ritmo bom." : "Bora de novo, agora mais ligeiro.");
+  }
+  if(cfg.kind==="free"){
+    const best = store.get(bestKey(cfg), null);
+    if(G.score>0 && (!best || G.score > best.score)){ store.set(bestKey(cfg), {score:G.score, acc, at:Date.now()}); chips.push(`<span class="chip mult" data-m="2">Novo recorde</span>`); }
+  }
+  if(cfg.kind==="daily"){
+    const today = dayKey(0), prev = store.get("daily", null);
+    if(!prev || prev.date!==today){
+      store.set("daily", {date:today, score:G.score, correct:G.correct, n:G.answered});
+      const st = store.get("dailyStreak", {last:null, n:0});
+      const ns = st.last===dayKey(-1) ? st.n+1 : st.last===today ? st.n : 1;
+      store.set("dailyStreak", {last:today, n:ns});
+      chips.push(`<span class="chip mult" data-m="2">${ns} ${ns===1?"dia":"dias"} seguidos</span>`);
+      verdict = `Desafio de hoje feito. ` + verdict;
+    } else {
+      chips.push(`<span class="chip">Treino · resultado de hoje: ${prev.correct}/${prev.n}</span>`);
+    }
+  }
+  if(cfg.kind==="camp"){
+    const st = STAGES[cfg.stage], camp = store.get("camp", {});
+    const earned = acc>=100 ? 3 : acc>=90 ? 2 : acc>=80 ? 1 : 0;
+    const wasOpen = !!camp[st.id];
+    if(earned > (camp[st.id]||0)){ camp[st.id] = earned; store.set("camp", camp); }
+    if(earned){
+      chips.push(`<span class="chip mult" data-m="2">${st.name} ${starStr(earned)}</span>`);
+      const nx = STAGES[cfg.stage+1];
+      if(nx){ nextBtn.hidden = false; nextBtn.textContent = `Próxima: ${nx.name}`; }
+      verdict = nx ? (wasOpen ? `${st.name} de novo, ${starStr(earned)}.` : `${st.name} vencido! ${nx.name} liberado.`) : "Brasil todo vencido. Você decorou o país.";
+      if(!wasOpen) blip("win");
+    } else {
+      verdict = `Faltou pouco: precisa de 80% pra passar de ${st.name}. Você fez ${acc}%.`;
+    }
+  }
+  $("#verdict").textContent = verdict;
+  $("#endStats").innerHTML = `<span class="chip">Acertos <b>${G.correct}/${G.answered}</b></span><span class="chip">Precisão <b>${acc}%</b></span><span class="chip">Maior sequência <b>${G.bestStreak}</b></span>` +
+    (G.mastered ? `<span class="chip mult" data-m="2">+${G.mastered} selo${G.mastered>1?"s":""} verde${G.mastered>1?"s":""}</span>` : "") +
+    chips.join("") + `<span class="chip">Seu Brasil <b>${pctBrasil()}%</b></span>`;
+  const box = $("#misses"); box.innerHTML = "";
+  // one card per state+mode, even if missed twice
+  const uniq = []; const k = new Set();
+  G.misses.forEach(m=>{ const key = m.q.c+m.q.mode; if(!k.has(key)){ k.add(key); uniq.push(m) } });
+  $("#missTitle").textContent = uniq.length ? `Pra revisar (${uniq.length})` : "";
+  $("#btnRetry").hidden = !uniq.length;
+  if(!uniq.length) box.innerHTML = `<p class="perfect">Nenhum erro pra revisar.</p>`;
+  uniq.forEach(m=>{
+    const x = byCode[m.q.c], d = document.createElement("div"); d.className = "miss";
+    const said = m.q.mode==="cap" ? m.said.cap : m.said.n;
+    d.innerHTML = `<img alt="Bandeira ${x.a} ${x.n}" src="${url(x.c)}"><span>${x.n} · ${x.cap}</span><em>${MODES[m.q.mode]}: você disse ${said}</em>`;
+    d.style.cursor = "pointer"; d.onclick = ()=>openSheet(x.c);
+    box.appendChild(d);
+  });
+  G.lastMisses = uniq.map(m=>m.q);
+  $("#btnAgain").textContent = cfg.kind==="camp" && nextBtn.hidden===false ? "Repetir fase" : "Jogar de novo";
+  $("#btnAgain").className = nextBtn.hidden ? "cta" : "btn2";
+  $("#btnMenu").textContent = cfg.kind==="camp" ? "Campanha" : cfg.kind==="free" && cfg.mode==="reg" ? "Regiões" : cfg.kind==="free" ? "Mudar modo" : "Início";
+  show("#scrEnd");
+  if(G.score>0){ pulse = 1; pulseColor = cssVar("--yellow"); }
+}
+
+
+/* ---------- drag to region ---------- */
+const D = {deck:[], cur:null, errors:0, misses:[], t0:0, clock:0, on:false, busy:false, wrongs:0};
+const fmtTime = s => `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+function startDrag(){
+  Object.assign(D, {deck: shuffle(UF.slice()), errors:0, misses:[], t0:Date.now(), on:true, busy:false});
+  const zones = $("#zones"); zones.innerHTML = "";
+  Object.entries(REGIONS).forEach(([r,name],i)=>{
+    const z = document.createElement("button"); z.className = "zone"; z.dataset.r = r;
+    z.innerHTML = `<h4><kbd>${i+1}</kbd><i style="background:var(--r-${r})"></i>${name}<small>0/${UF.filter(u=>u.r===r).length}</small></h4><div class="got"></div>`;
+    z.onclick = ()=>dropOn(r);
+    zones.appendChild(z);
+  });
+  $("#dErr").textContent = 0; $("#dTime").textContent = "0:00";
+  D.clock = setInterval(()=>{ $("#dTime").textContent = fmtTime(Math.floor((Date.now()-D.t0)/1000)) }, 500);
+  ["#chipScore","#chipMult","#chipStreak","#chipTime"].forEach(s=>$(s).hidden = true);
+  show("#scrDrag"); nextCard();
+}
+function nextCard(){
+  const deck = $("#deck");
+  $("#dLeft").textContent = D.deck.length;
+  if(!D.deck.length){ deck.classList.add("empty"); return finishDrag(); }
+  deck.classList.remove("empty"); deck.classList.toggle("last", D.deck.length===1);
+  D.cur = D.deck[0]; D.wrongs = 0; D.busy = false;
+  $("#dHint").textContent = "Arraste a carta, toque na região ou use as teclas 1 a 5";
+  deck.innerHTML = `<div class="dcard" id="dcard"><img src="${url(D.cur.c)}" alt="" draggable="false"><b>${D.cur.n}</b></div>`;
+  document.querySelectorAll(".zone.help").forEach(z=>z.classList.remove("help"));
+  const card = $("#dcard");
+  if(!REDUCED) card.animate([{transform:"translateY(-30px) rotate(8deg) scale(.8)", opacity:0},{transform:"none", opacity:1}],{duration:420, easing:"cubic-bezier(.2,1.1,.3,1.15)"});
+  let drag = null, over = null;
+  const zoneAt = (x,y) => { for(const el of document.elementsFromPoint(x,y)){ const z = el.closest && el.closest(".zone"); if(z) return z; } return null; };
+  card.onpointerdown = e => { if(D.busy) return; e.preventDefault(); card.setPointerCapture(e.pointerId); drag = {x:e.clientX, y:e.clientY, moved:false}; card.classList.add("dragging"); };
+  card.onpointermove = e => {
+    if(!drag) return;
+    const dx = e.clientX-drag.x, dy = e.clientY-drag.y;
+    if(Math.abs(dx)+Math.abs(dy) > 6) drag.moved = true;
+    card.style.transform = `translate(${dx}px,${dy}px) rotate(${dx/18}deg) scale(.9)`;
+    const z = zoneAt(e.clientX, e.clientY);
+    if(z!==over){ over && over.classList.remove("over"); over = z; over && over.classList.add("over"); }
+  };
+  const end = e => {
+    if(!drag) return;
+    card.classList.remove("dragging"); over && over.classList.remove("over");
+    const z = drag.moved ? zoneAt(e.clientX, e.clientY) : null; drag = null; over = null;
+    if(z) dropOn(z.dataset.r, true); else snapBack();
+  };
+  card.onpointerup = end; card.onpointercancel = end;
+}
+function snapBack(){
+  const card = $("#dcard"); if(!card) return;
+  const from = card.style.transform || "none"; card.style.transform = "";
+  if(!REDUCED) card.animate([{transform:from},{transform:"none"}],{duration:320, easing:"cubic-bezier(.3,1.5,.5,1)"});
+}
+function dropOn(r, dragged){
+  if(!D.on || D.busy || !D.cur) return;
+  const x = D.cur, right = r===x.r, zone = document.querySelector(`.zone[data-r="${r}"]`), card = $("#dcard");
+  bump(x.c, "r", right && D.wrongs===0);
+  if(right){
+    D.busy = true; blip("ok"); burst(zone);
+    zone.classList.add("okflash"); setTimeout(()=>zone.classList.remove("okflash"), 350);
+    const chip = document.createElement("span"); chip.textContent = x.c.toUpperCase(); chip.style.background = regionColor(r); chip.title = x.n;
+    const done = ()=>{
+      zone.querySelector(".got").appendChild(chip);
+      const n = zone.querySelectorAll(".got span").length; zone.querySelector("h4 small").textContent = `${n}/${UF.filter(u=>u.r===r).length}`;
+      D.deck.shift(); nextCard();
+    };
+    if(REDUCED || !card) return done();
+    const a = card.getBoundingClientRect(), b = zone.getBoundingClientRect();
+    const dx = b.left + b.width/2 - (a.left + a.width/2), dy = b.top + b.height/2 - (a.top + a.height/2);
+    card.style.transform = "";
+    card.animate([{transform: dragged ? `translate(${dx}px,${dy}px) scale(.9)` : "none", opacity:1},{transform:`translate(${dx}px,${dy}px) scale(.15)`, opacity:0}],{duration:260, easing:"ease-in", fill:"forwards"}).onfinish = done;
+  } else {
+    D.errors++; D.wrongs++; D.misses.push({x, said:r}); $("#dErr").textContent = D.errors;
+    blip("bad"); pulse = 1; pulseColor = cssVar("--pink");
+    zone.classList.add("bad","shake"); setTimeout(()=>zone.classList.remove("bad","shake"), 500);
+    snapBack();
+    if(D.wrongs>=2) document.querySelector(`.zone[data-r="${x.r}"]`).classList.add("help");
+    $("#dHint").textContent = D.wrongs>=2 ? `Dica: ${x.n} fica na caixa piscando` : `${x.n} não é do ${REGIONS[r]}`;
+  }
+}
+function finishDrag(){
+  clearInterval(D.clock);  D.on = false;
+  const secs = Math.round((Date.now()-D.t0)/1000), best = store.get("best-drag", null);
+  const isRecord = D.errors<=3 && (!best || secs < best.time);
+  if(isRecord) store.set("best-drag", {time:secs, errors:D.errors});
+  const st = D.errors===0 ? 3 : D.errors<=3 ? 2 : 1;
+  $("#endLabel").textContent = "Tempo"; $("#endScore").textContent = fmtTime(secs);
+  $("#verdict").textContent = D.errors===0 ? "Os 27 no lugar, sem errar nenhum." : D.errors<=3 ? `Quase limpo: ${D.errors} ${D.errors===1?"erro":"erros"}.` : `${D.errors} erros. Bora de novo que a segunda é mais rápida.`;
+  $("#endStats").innerHTML = `<span class="chip">Erros <b>${D.errors}</b></span><span class="chip mult" data-m="2">${starStr(st)}</span>` + (isRecord ? `<span class="chip mult" data-m="2">Novo recorde</span>` : best ? `<span class="chip">Recorde <b>${fmtTime(best.time)}</b></span>` : "") + `<span class="chip">Seu Brasil <b>${pctBrasil()}%</b></span>`;
+  const box = $("#misses"); box.innerHTML = "";
+  const uniq = [...new Map(D.misses.map(m=>[m.x.c, m])).values()];
+  $("#missTitle").textContent = uniq.length ? `Pra revisar (${uniq.length})` : "";
+  if(!uniq.length) box.innerHTML = `<p class="perfect">Nenhum erro pra revisar.</p>`;
+  uniq.forEach(m=>{
+    const d = document.createElement("div"); d.className = "miss"; d.style.cursor = "pointer";
+    d.innerHTML = `<img alt="Bandeira ${m.x.a} ${m.x.n}" src="${url(m.x.c)}"><span>${m.x.n} · ${REGIONS[m.x.r]}</span><em>você pôs no ${REGIONS[m.said]}</em>`;
+    d.onclick = ()=>openSheet(m.x.c); box.appendChild(d);
+  });
+  $("#btnRetry").hidden = true; $("#btnNext").hidden = true;
+  $("#btnAgain").textContent = "Jogar de novo"; $("#btnAgain").className = "cta"; $("#btnMenu").textContent = "Regiões";
+  if(!REDUCED) blip("win");
+  setTimeout(()=>{ show("#scrEnd"); pulse = 1; pulseColor = cssVar("--yellow"); }, 350);
+}
+$("#btnDrag").onclick = ()=>{ blip("tap"); start({kind:"drag"}) };
+
+/* ---------- fill the region: free recall ---------- */
+const F = {order:[], step:0, r:null, found:[], gave:[], hinted:new Set(), errors:0, hints:0, wrong:[], allFound:[], t0:0, clock:0, on:false, done:false};
+const REG_ORDER = ["n","ne","co","se","s"];
+const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z]/g,"");
+const LOOKUP = {};
+UF.forEach(u=>{ LOOKUP[norm(u.n)] = u; LOOKUP[u.c] = u; });
+LOOKUP["brasilia"] = byCode.df;
+let fillKeys = store.get("fillKeys", false);
+function openFill(){
+  stopGame();
+  $("#fillPick").hidden = false; $("#fillGame").hidden = true;
+  const seg = $("#fillRegions"); seg.innerHTML = "";
+  [...REG_ORDER.map(r=>[r, REGIONS[r]]), ["all","Rodada Brasil (as 5)"]].forEach(([r,name])=>{
+    const b = document.createElement("button"); b.textContent = name; b.onclick = ()=>{ blip("tap"); start({kind:"fill", region:r}) };
+    seg.appendChild(b);
+  });
+  $("#fillKeys").checked = fillKeys;
+  ["#chipScore","#chipMult","#chipStreak","#chipTime"].forEach(s=>$(s).hidden = true);
+  show("#scrFill");
+}
+$("#fillKeys").onchange = e=>{ fillKeys = e.target.checked; store.set("fillKeys", fillKeys); };
+function startFill(cfg){
+  Object.assign(F, {order: cfg.region==="all" ? REG_ORDER.slice() : [cfg.region], step:0, errors:0, hints:0, wrong:[], gave:[], allFound:[], t0:Date.now(), on:true});
+  $("#fillPick").hidden = true; $("#fillGame").hidden = false;
+  $("#fillForm").hidden = fillKeys; $("#sigKeys").hidden = !fillKeys;
+  ["#chipScore","#chipMult","#chipStreak","#chipTime"].forEach(s=>$(s).hidden = true);
+  F.clock = setInterval(()=>{ $("#fillTime").textContent = fmtTime(Math.floor((Date.now()-F.t0)/1000)) }, 500);
+  $("#fillTime").textContent = "0:00"; $("#fillErr").textContent = 0;
+  show("#scrFill"); fillRegion();
+}
+function fillRegion(){
+  F.r = F.order[F.step]; F.found = []; F.hinted = new Set(); F.done = false;
+  const members = UF.filter(u=>u.r===F.r);
+  $("#fillQ").innerHTML = `Quais são os ${members.length} estados do <em>${REGIONS[F.r]}</em>?`;
+  $("#fillStep").hidden = F.order.length===1; $("#fillStep").textContent = `Região ${F.step+1}/${F.order.length}`;
+  $("#fillNext").hidden = true; $("#fillHint").hidden = false; $("#fillGive").hidden = false;
+  say("");
+  if(fillKeys){
+    const k = $("#sigKeys"); k.innerHTML = "";
+    UF.slice().sort((a,b)=>a.c.localeCompare(b.c)).forEach(u=>{ const b = document.createElement("button"); b.textContent = u.c.toUpperCase(); b.dataset.c = u.c; b.title = u.n; b.onclick = ()=>guess(u.c); k.appendChild(b); });
+  }
+  renderFill();
+  if(!fillKeys) setTimeout(()=>$("#fillInput").focus(), 50);
+}
+function renderFill(highlight){
+  const members = UF.filter(u=>u.r===F.r);
+  $("#fillLeft").textContent = members.length - F.found.length;
+  $("#fillMap").innerHTML = mapSVG({fill: u => u.r!==F.r ? {fill:"var(--map-base)", op:.25}
+    : F.found.includes(u.c) ? {fill:regionColor(u.r), op:.95}
+    : F.done ? {fill:"var(--pink)", op:.9}
+    : {fill:"var(--map-base)", op:1}});
+  const svg = $("#fillMap svg");
+  // no tooltips: hovering would give the answer away
+  svg.querySelectorAll("path").forEach(p=>{ if(byCode[p.dataset.c].r===F.r) p.setAttribute("stroke-width","2"); const t = p.querySelector("title"); if(t && !F.found.includes(p.dataset.c) && !F.done) t.remove(); });
+  if(highlight){ const p = svg.querySelector(`path[data-c="${highlight}"]`); p.classList.add("pulse-st"); p.setAttribute("fill","var(--yellow)"); p.setAttribute("fill-opacity","1"); addMarker(svg, highlight, false); }
+  const slots = $("#slots"); slots.innerHTML = "";
+  const shown = [...F.found.map(c=>({c, kind:"got"})), ...(F.done ? members.filter(u=>!F.found.includes(u.c)).map(u=>({c:u.c, kind:"lost"})) : [])];
+  const pend = [...F.hinted].filter(c=>!F.found.includes(c));
+  for(let i=0;i<members.length;i++){
+    const d = document.createElement("div"), it = shown[i];
+    if(it){ const u = byCode[it.c]; d.className = "slot " + it.kind; d.innerHTML = `<i>${i+1}</i><img src="${url(u.c)}" alt=""><span>${u.n}</span>`; }
+    else {
+      const h = pend[i - F.found.length];
+      d.className = "slot" + (h ? " hinted" : ""); d.innerHTML = `<i>${i+1}</i><span>${h ? byCode[h].n[0] + " …" : ""}</span>`;
+    }
+    slots.appendChild(d);
+  }
+  document.querySelectorAll("#sigKeys button").forEach(b=>b.disabled = F.found.includes(b.dataset.c) || F.done);
+}
+function say(t, cls){ const m = $("#fillMsg"); m.textContent = t; m.className = "fill-msg " + (cls||""); }
+function guess(raw){
+  if(!F.on || F.done) return;
+  const key = norm(raw); if(!key) return;
+  const u = LOOKUP[key];
+  if(!u){ say(`Não achei nenhum estado chamado “${raw}”.`, "bad"); blip("bad"); return; }
+  if(F.found.includes(u.c)){ say(`${u.n} já tá aí.`); return; }
+  if(u.r !== F.r){
+    F.errors++; F.wrong.push({u, said:F.r}); $("#fillErr").textContent = F.errors;
+    bump(u.c, "r", false);
+    say(`${u.n} é do ${REGIONS[u.r]}.`, "bad"); blip("bad");
+    const f = fillKeys ? $("#sigKeys") : $("#fillForm"); f.classList.remove("shake"); void f.offsetWidth; f.classList.add("shake");
+    return;
+  }
+  F.found.push(u.c);
+  bump(u.c, "r", !F.hinted.has(u.c));
+  blip("ok"); say(`Isso, ${u.n}!`, "ok");
+  renderFill();
+  burst($("#slots").children[F.found.length-1]);
+  if(F.found.length === UF.filter(x=>x.r===F.r).length) regionDone(true);
+}
+function regionDone(complete){
+  F.done = true; F.allFound.push(...F.found);
+  renderFill();
+  $("#fillHint").hidden = true; $("#fillGive").hidden = true;
+  const last = F.step === F.order.length-1;
+  if(complete){ say(`${REGIONS[F.r]} completo!`, "ok"); blip("up"); pulse = 1; pulseColor = cssVar("--green"); }
+  $("#fillNext").hidden = false; $("#fillNext").textContent = last ? "Ver resultado" : `Próxima: ${REGIONS[F.order[F.step+1]]}`;
+  $("#fillNext").focus();
+}
+$("#fillForm").onsubmit = e=>{ e.preventDefault(); const i = $("#fillInput"); guess(i.value); i.value = ""; if(!F.done) i.focus(); };
+$("#fillHint").onclick = ()=>{
+  if(F.done) return;
+  const missing = UF.filter(u=>u.r===F.r && !F.found.includes(u.c));
+  // a new hint goes to the weakest state not hinted yet
+  const fresh = missing.filter(u=>!F.hinted.has(u.c)).sort((a,b)=>lvl(a.c,"r")-lvl(b.c,"r"));
+  const u = fresh[0] || missing[0];
+  if(F.hinted.has(u.c)){ say(`Tá piscando no mapa. Começa com “${u.n.slice(0,3)}”.`); renderFill(u.c); return; }
+  F.hinted.add(u.c); F.hints++;
+  say(`Dica: começa com “${u.n[0]}” e tá piscando no mapa.`);
+  renderFill(u.c);
+  if(!fillKeys) $("#fillInput").focus();
+};
+$("#fillGive").onclick = ()=>{
+  if(F.done) return;
+  const missing = UF.filter(u=>u.r===F.r && !F.found.includes(u.c));
+  missing.forEach(u=>{ F.gave.push(u.c); bump(u.c, "r", false); });
+  blip("bad");
+  regionDone(false);
+  say(`Faltaram ${missing.length}: ${missing.map(u=>u.n).join(", ")}.`, "bad");
+};
+$("#fillNext").onclick = ()=>{ blip("tap"); if(F.step < F.order.length-1){ F.step++; fillRegion(); } else finishFill(); };
+function finishFill(){
+  clearInterval(F.clock); F.on = false;
+  const secs = Math.round((Date.now()-F.t0)/1000);
+  const total = F.order.reduce((s,r)=>s + UF.filter(u=>u.r===r).length, 0), got = F.allFound.length;
+  const clean = got===total && F.hints===0;
+  const st = clean && F.errors===0 ? 3 : got===total ? 2 : got>=total/2 ? 1 : 0;
+  const bk = "best-fill-" + (F.order.length>1 ? "all" : F.order[0]), best = store.get(bk, null);
+  const isRecord = clean && (!best || secs < best.time);
+  if(isRecord) store.set(bk, {time:secs});
+  const where = F.order.length>1 ? "o Brasil" : `o ${REGIONS[F.order[0]]}`;
+  $("#endLabel").textContent = "Lembrou"; $("#endScore").textContent = `${got}/${total}`;
+  $("#verdict").textContent = clean && F.errors===0 ? `Sabe ${where} de cor. Sem dica, sem erro.` : got===total ? `Completou ${where}${F.hints ? ` com ${F.hints} ${F.hints===1?"dica":"dicas"}` : ""}. Mais uma e vai sem ajuda.` : `Faltaram ${total-got}. Eles vão aparecer mais nos outros modos até grudar.`;
+  $("#endStats").innerHTML = `<span class="chip">Tempo <b>${fmtTime(secs)}</b></span><span class="chip">Dicas <b>${F.hints}</b></span><span class="chip">Erros <b>${F.errors}</b></span>` + (st ? `<span class="chip mult" data-m="2">${starStr(st)}</span>` : "") + (isRecord ? `<span class="chip mult" data-m="2">Novo recorde</span>` : best ? `<span class="chip">Recorde <b>${fmtTime(best.time)}</b></span>` : "");
+  const box = $("#misses"); box.innerHTML = "";
+  const items = [...F.gave.map(c=>({u:byCode[c], note:"não lembrou"})), ...F.wrong.map(w=>({u:w.u, note:`pôs no ${REGIONS[w.said]}`}))];
+  const uniq = [...new Map(items.map(m=>[m.u.c, m])).values()];
+  $("#missTitle").textContent = uniq.length ? `Pra revisar (${uniq.length})` : "";
+  if(!uniq.length) box.innerHTML = `<p class="perfect">Nada pra revisar.</p>`;
+  uniq.forEach(m=>{ const d = document.createElement("div"); d.className = "miss"; d.style.cursor = "pointer";
+    d.innerHTML = `<img alt="" src="${url(m.u.c)}"><span>${m.u.n} · ${REGIONS[m.u.r]}</span><em>${m.note}</em>`; d.onclick = ()=>openSheet(m.u.c); box.appendChild(d); });
+  $("#btnRetry").hidden = true; $("#btnNext").hidden = true;
+  $("#btnAgain").textContent = "Jogar de novo"; $("#btnAgain").className = "cta"; $("#btnMenu").textContent = "Outra região";
+  if(st===3) blip("win");
+  show("#scrEnd"); pulse = 1; pulseColor = cssVar("--yellow");
+}
+$("#btnFill").onclick = ()=>{ blip("tap"); openFill(); };
+
+$("#btnDaily").onclick = ()=>{ blip("tap"); start({kind:"daily"}) };
+$("#btnAgain").onclick = ()=>{ blip("tap"); start(G.cfg) };
+$("#btnNext").onclick = ()=>{ blip("tap"); startCamp(G.cfg.stage+1) };
+$("#btnRetry").onclick = ()=>{ blip("tap"); start({kind:"retry", list:G.lastMisses}) };
+$("#btnMenu").onclick = ()=>{
+  const c = G.cfg || {};
+  if(c.kind==="camp"){ renderCamp(); show("#scrCamp"); }
+  else if(c.kind==="fill") openFill();
+  else if(c.kind==="drag" || (c.kind==="free" && c.mode==="reg")) openRegions();
+  else if(c.kind==="free") openSetup();
+  else goHome();
+};
+$("#btnGoPlay").onclick = ()=>{ blip("tap"); openSetup(); };
+$("#btnGoRegions").onclick = ()=>{ blip("tap"); openRegions(); };
+$("#btnRegQuiz").onclick = ()=>{ blip("tap"); start({kind:"free", mode:"reg", region:"all", rounds:"10"}); };
+$("#fillBack").onclick = ()=>{ blip("tap"); openRegions(); };
+document.querySelectorAll("[data-back]").forEach(b=>b.onclick = goHome);
+addEventListener("keydown", e=>{
+  if($("#sheet").open) return;
+  if(!$("#scrDrag").hidden){ const k = "12345".indexOf(e.key); if(k>=0) dropOn(Object.keys(REGIONS)[k]); return; }
+  if(!$("#scrPlay").hidden){
+    if(G.waiting && (e.key==="Enter" || e.key===" ")){ e.preventDefault(); advance(); return; }
+    const k = "12345".indexOf(e.key); if(k>=0 && G.opts[k]) choose(G.opts[k].c, k);
+    return;
+  }
+  if(e.key==="Enter" && !$("#scrEnd").hidden) start(G.cfg);
+});
+
+/* ---------- boot ---------- */
+fetch("data.json").then(r=>{ if(!r.ok) throw new Error(r.status); return r.json() }).then(d=>{
+  DATA = d; updateStart(); show("#scrStart");
+}).catch(()=>{ $("#loading").textContent = "Não consegui carregar as bandeiras. Recarregue a página." });
+</script>
+
+</body>
+</html>
