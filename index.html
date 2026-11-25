@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Jogo pra aprender os 27 estados do Brasil: bandeiras, capitais, mapa, gentílicos e regiões.">
+<meta name="theme-color" content="#FFF4D1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B1620" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BraSil">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="manifest" href="manifest.webmanifest">
 <style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
@@ -106,17 +115,17 @@ main{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-dir
 /* ---------- play ---------- */
 .qline{font-family:var(--f-display);font-weight:700;font-size:clamp(17px,2.6vw,24px);letter-spacing:-.02em;text-align:center;line-height:1.15;text-wrap:balance;max-width:720px}
 .qline em{font-style:normal;background:var(--yellow);color:#0E1B2C;padding:0 .2em;border-radius:.3em}
-.stage{position:relative;width:min(100%,540px,calc((100svh - 450px) * 1.43));min-width:200px;aspect-ratio:10/7;max-width:100%}
+.stage{position:relative;width:min(calc(100% - 28px),540px,calc((100svh - 450px) * 1.43));min-width:200px;aspect-ratio:10/7;max-width:100%}
 .stage.is-map{aspect-ratio:613/639;width:min(100%,420px,calc((100svh - 450px) * .96))}
 .flagcard{position:absolute;inset:0;border-radius:14px;background:var(--card);box-shadow:0 0 0 2px var(--line),10px 12px 0 var(--blue);transform:rotate(-2deg);overflow:hidden;will-change:transform}
 .flagwrap{position:absolute;inset:0;filter:url(#wave)}
 .flagwrap img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.05)}
 .cloth{position:absolute;inset:0;pointer-events:none;mix-blend-mode:soft-light;opacity:.8;
   background:repeating-linear-gradient(100deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.55) 9%,rgba(0,0,0,.35) 19%,rgba(255,255,255,0) 26%);background-size:220% 100%;animation:cloth 5.5s linear infinite}
-.namecard{position:absolute;inset:0;display:grid;place-items:center;padding:24px;box-sizing:border-box;text-align:center}
-.namecard .big{font-family:var(--f-display);font-weight:900;letter-spacing:-.04em;line-height:.95;font-size:clamp(28px,6.4vw,60px);text-wrap:balance;color:#0E1B2C}
-.namecard .sub{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-top:10px;color:#0E1B2CB0}
-.namecard img{position:absolute;left:16px;top:16px;width:22%;border-radius:4px;box-shadow:0 0 0 1.5px #0E1B2C;transform:rotate(-6deg)}
+.namecard{position:absolute;inset:0;display:grid;place-items:center;padding:17% 7% 9%;box-sizing:border-box;text-align:center;container-type:inline-size}
+.namecard .big{font-family:var(--f-display);font-weight:900;letter-spacing:-.04em;line-height:.95;font-size:clamp(20px,6vw,48px);font-size:min(12cqw,calc(135cqw / var(--L,10)));overflow-wrap:break-word;text-wrap:balance;color:#0E1B2C}
+.namecard .sub{font-family:var(--f-mono);font-size:clamp(10px,3.4cqw,12px);letter-spacing:.12em;text-transform:uppercase;margin-top:10px;color:#0E1B2CB0}
+.namecard img{position:absolute;left:5%;top:7%;width:19%;border-radius:4px;box-shadow:0 0 0 1.5px #0E1B2C;transform:rotate(-6deg)}
 .namecard.capital{background:var(--ink)}
 .namecard.capital .big{color:var(--yellow)}
 .namecard.capital .sub{color:var(--bg);opacity:.75}
@@ -366,7 +375,7 @@ dialog::backdrop{background:#0E1B2C99;backdrop-filter:blur(4px)}
   .answers.five .ans:nth-child(5){grid-column:1/-1}
   .ans{padding:12px 12px 12px 42px;min-height:54px;font-size:15px}
   .ans kbd{left:9px;width:22px;height:22px;font-size:11px}
-  .stage{width:min(100%,calc((100svh - 430px) * 1.43))}
+  .stage{width:min(calc(100% - 28px),calc((100svh - 430px) * 1.43))}
   .stage.is-map{width:min(100%,calc((100svh - 430px) * .96))}
   .result-top{grid-template-columns:1fr}
   .hud .chip.hide-sm{display:none}
@@ -391,6 +400,10 @@ dialog::backdrop{background:#0E1B2C99;backdrop-filter:blur(4px)}
   .reveal .rflag{width:44px}
   .reveal .mini{width:44px}
   .reveal .rtxt{font-size:13px}
+}
+@media (max-width:380px){
+  .ans{font-size:14px;padding:10px 10px 10px 38px;min-height:50px;hyphens:auto}
+  .ans kbd{left:8px;width:20px;height:20px}
 }
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
@@ -988,6 +1001,7 @@ function syncHud(){
   $("#score").textContent = G.score; $("#streak").textContent = G.streak;
   const m = multOf(G.streak); $("#mult").textContent = m; $("#chipMult").dataset.m = m;
 }
+const bigName = t => `<div class="big" style="--L:${Math.max(...t.split(/[\s-]+/).map(w=>w.length))}">${t}</div>`;
 function renderStage(q){
   const x = byCode[q.c], card = $("#card"), stage = $("#stage");
   stage.classList.toggle("is-map", q.mode==="map");
@@ -1000,20 +1014,20 @@ function renderStage(q){
   } else if(q.mode==="cap"){
     $("#qline").innerHTML = `Qual é a capital ${x.a} <em>${x.n}</em>?`;
     card.className = "flagcard";
-    card.innerHTML = `<div class="namecard" style="background:${regionColor(x.r)}"><img src="${url(x.c)}" alt=""><div><div class="big">${x.n}</div><div class="sub">${REGIONS[x.r]} · capital?</div></div></div>`;
+    card.innerHTML = `<div class="namecard" style="background:${regionColor(x.r)}"><img src="${url(x.c)}" alt=""><div>${bigName(x.n)}<div class="sub">${REGIONS[x.r]} · capital?</div></div></div>`;
   } else if(q.mode==="capr"){
     $("#qline").innerHTML = `<em>${x.cap}</em> é capital de qual estado?`;
     card.className = "flagcard";
-    card.innerHTML = `<div class="namecard capital"><div><div class="big">${x.cap}</div><div class="sub">capital de…?</div></div></div>`;
+    card.innerHTML = `<div class="namecard capital"><div>${bigName(x.cap)}<div class="sub">capital de…?</div></div></div>`;
   } else if(q.mode==="gent"){
     $("#qline").innerHTML = `Quem é <em>${x.g}</em> nasceu em qual estado?`;
     card.className = "flagcard";
-    card.innerHTML = `<div class="namecard gent"><div><div class="big">${cap1(x.g)}</div><div class="sub">gentílico · nasceu onde?</div></div></div>`;
+    card.innerHTML = `<div class="namecard gent"><div>${bigName(cap1(x.g))}<div class="sub">gentílico · nasceu onde?</div></div></div>`;
   } else if(q.mode==="reg"){
     const art = {do:"o ", da:"a ", de:""}[x.a];
     $("#qline").innerHTML = `Em que região fica ${art}<em>${x.n}</em>?`;
     card.className = "flagcard";
-    card.innerHTML = `<div class="namecard reg"><img src="${url(x.c)}" alt=""><div><div class="big">${x.n}</div><div class="sub">capital ${x.cap} · qual região?</div></div></div>`;
+    card.innerHTML = `<div class="namecard reg"><img src="${url(x.c)}" alt=""><div>${bigName(x.n)}<div class="sub">capital ${x.cap} · qual região?</div></div></div>`;
   } else if(q.mode==="map"){
     $("#qline").innerHTML = "Que estado é esse que acendeu?";
     card.className = "mapcard";
@@ -1044,7 +1058,7 @@ function next(){
     if(!REDUCED) b.animate([{opacity:0, transform:`translateY(16px) rotate(${k%2?2:-2}deg)`},{opacity:1, transform:"none"}],{duration:480, delay:80+k*60, easing:"cubic-bezier(.2,.9,.3,1.3)", fill:"backwards"});
   });
   const rv = $("#reveal"); rv.className = "reveal"; rv.onclick = null;
-  const hint = q.mode==="click" ? "Toque no estado no mapa. Os pequenos têm um círculo pontilhado." : G.i===0 ? `Teclas 1 a ${G.opts.length} também funcionam` : "";
+  const hint = q.mode==="click" ? "Toque no estado no mapa. Os pequenos têm um círculo pontilhado." : G.i===0 && matchMedia("(hover:hover)").matches ? `Teclas 1 a ${G.opts.length} também funcionam` : "";
   rv.innerHTML = `<div class="hint" style="width:100%">${hint}</div>`;
   const card = $("#card");
   const tilt = q.mode==="click" ? 0 : (Math.random()*4-2).toFixed(1);
